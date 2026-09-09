@@ -1331,6 +1331,19 @@ async function adminDeleteListing(id) {
     }
 }
 
+async function adminDeleteUser(userId, name) {
+    if (!confirm(`Yakin ingin menghapus owner "${name}"?\n\nSemua data akan dihapus:\n- Semua listing kos\n- Data langganan\n- Riwayat pembayaran\n\nTindakan ini tidak bisa dibatalkan.`)) return;
+
+    const result = await api(`/users/admin/${userId}`, { method: 'DELETE' });
+    if (result.success) {
+        showToast('success', 'Berhasil!', result.message);
+        // Reload subscriptions page
+        loadAllSubscriptions();
+    } else {
+        showToast('error', 'Gagal', result.message);
+    }
+}
+
 // =====================================================
 // ADD LISTING MODAL & FUNCTIONS
 // =====================================================
@@ -2202,10 +2215,11 @@ async function loadAllSubscriptions() {
                                             <th>Sisa Hari</th>
                                             <th>Total Kos</th>
                                             <th>Kos Aktif</th>
+                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${overview.length === 0 ? '<tr><td colspan="6" style="text-align:center">Belum ada data</td></tr>' : ''}
+                                        ${overview.length === 0 ? '<tr><td colspan="7" style="text-align:center">Belum ada data</td></tr>' : ''}
                                         ${overview.map(o => `
                                             <tr>
                                                 <td>${escapeHtml(o.name)}</td>
@@ -2214,6 +2228,13 @@ async function loadAllSubscriptions() {
                                                 <td>${o.days_remaining} hari</td>
                                                 <td>${o.total_listings}</td>
                                                 <td>${o.active_listings}</td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <button class="action-btn delete" onclick="adminDeleteUser('${o.user_id}', '${escapeHtml(o.name)}')" title="Hapus Owner">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -2331,6 +2352,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.goToDashboard = goToDashboard;
     window.searchListings = searchListings;
     window.filterListings = filterListings;
+    window.adminDeleteUser = adminDeleteUser;
 });
 
 // Re-init drag drop when modal opens
