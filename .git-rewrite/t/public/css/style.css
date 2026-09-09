@@ -224,18 +224,6 @@ input, select, textarea {
     padding: 8px;
 }
 
-/* Mobile Navigation Buttons - Always visible on mobile */
-.nav-actions-mobile {
-    display: none;
-    align-items: center;
-    gap: 8px;
-}
-
-.nav-actions-mobile .btn {
-    padding: 8px 14px;
-    font-size: 0.85rem;
-}
-
 /* =====================================================
    BUTTONS - Premium Style
    ===================================================== */
@@ -989,7 +977,6 @@ input, select, textarea {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    -webkit-overflow-scrolling: touch;
 }
 
 .modal.active {
@@ -1001,7 +988,6 @@ input, select, textarea {
     inset: 0;
     background: rgba(15, 23, 42, 0.7);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }
 
 .modal-content {
@@ -1011,13 +997,10 @@ input, select, textarea {
     padding: 44px;
     width: 100%;
     max-width: 460px;
-    max-height: 85vh;
-    max-height: 85dvh;
+    max-height: 90vh;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
     box-shadow: var(--shadow-2xl);
     animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    margin: auto;
 }
 
 @keyframes modalSlideIn {
@@ -1610,29 +1593,6 @@ input, select, textarea {
 }
 
 /* =====================================================
-   SAFE AREA SUPPORT (iPhone notch, etc.)
-   ===================================================== */
-@supports (padding: env(safe-area-inset-top)) {
-    .navbar {
-        padding-top: env(safe-area-inset-top);
-    }
-
-    .mobile-menu {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    .mobile-menu-actions {
-        padding-bottom: calc(20px + env(safe-area-inset-bottom));
-    }
-
-    .modal {
-        padding-left: max(10px, env(safe-area-inset-left));
-        padding-right: max(10px, env(safe-area-inset-right));
-    }
-}
-
-/* =====================================================
    MOBILE MENU OVERLAY
    ===================================================== */
 .mobile-menu-overlay {
@@ -1788,23 +1748,12 @@ input, select, textarea {
     }
 
     .container {
-        padding: 0 16px;
+        padding: 0 20px;
     }
 
-    .navbar .container {
-        height: 64px;
-    }
-
-    .nav-links {
-        display: none;
-    }
-
+    .nav-links,
     .nav-actions {
         display: none;
-    }
-
-    .nav-actions-mobile {
-        display: flex;
     }
 
     .mobile-toggle {
@@ -1823,21 +1772,6 @@ input, select, textarea {
 
     .mobile-toggle i {
         font-size: 1.3rem;
-    }
-
-    /* Modal fixes for mobile */
-    .modal {
-        padding: 10px;
-        align-items: flex-start;
-    }
-
-    .modal-content {
-        padding: 24px 20px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        max-height: calc(100vh - 40px);
-        max-height: calc(100dvh - 40px);
-        border-radius: var(--radius-xl);
     }
 
     /* Hero Section */
@@ -1980,63 +1914,33 @@ input, select, textarea {
 
     /* Modals */
     .modal-content {
-        padding: 24px 20px;
+        padding: 24px;
         margin: 10px;
         max-width: calc(100% - 20px);
         border-radius: var(--radius-xl);
     }
 
-    .modal-header {
-        margin-bottom: 24px;
-    }
-
     .modal-header h2 {
-        font-size: 1.25rem;
-    }
-
-    .modal-header p {
-        font-size: 0.9rem;
+        font-size: 1.3rem;
     }
 
     .modal-icon {
-        width: 48px;
-        height: 48px;
-        margin-bottom: 12px;
+        width: 56px;
+        height: 56px;
     }
 
     .modal-icon i {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
     }
 
     .form-group {
-        margin-bottom: 16px;
-    }
-
-    .form-group label {
-        font-size: 0.85rem;
+        margin-bottom: 20px;
     }
 
     .input-wrapper input,
     .input-wrapper select {
-        padding: 12px 16px 12px 40px;
-        font-size: 0.9rem;
-    }
-
-    .input-wrapper i {
-        left: 14px;
-        font-size: 0.9rem;
-    }
-
-    .btn {
-        padding: 12px 20px;
-        font-size: 0.9rem;
-    }
-
-    .modal-close {
-        top: 12px;
-        right: 12px;
-        width: 36px;
-        height: 36px;
+        padding: 12px 16px 12px 44px;
+        font-size: 0.95rem;
     }
 
     /* Dashboard */
@@ -2171,193 +2075,51 @@ input, select, textarea {
 }
 
 @media (max-width: 480px) {
-    :root {
-        --section-padding: 40px;
-    }
-
-    .container {
-        padding: 0 12px;
-    }
-
-    .navbar .container {
-        height: 56px;
-    }
-
-    .logo {
-        font-size: 1.2rem;
-    }
-
-    .logo i {
-        font-size: 1.4rem;
-    }
-
-    .nav-actions-mobile .btn {
-        padding: 6px 10px;
-        font-size: 0.75rem;
-    }
-
     .hero-title {
-        font-size: 1.5rem;
-    }
-
-    .hero-subtitle {
-        font-size: 0.85rem;
-    }
-
-    .hero-badge {
-        font-size: 0.7rem;
-        padding: 6px 12px;
-    }
-
-    .hero-search {
-        margin-bottom: 24px;
-    }
-
-    .search-box {
-        padding: 4px;
-    }
-
-    .search-box input {
-        padding: 10px;
-        font-size: 0.85rem;
-    }
-
-    .search-box .btn {
-        padding: 10px 16px;
-        font-size: 0.85rem;
+        font-size: 1.75rem;
     }
 
     .hero-stats {
-        gap: 8px;
+        gap: 12px;
     }
 
     .stat-number {
-        font-size: 1rem;
-    }
-
-    .stat-label {
-        font-size: 0.65rem;
-    }
-
-    .btn {
-        padding: 10px 16px;
-        font-size: 0.85rem;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
-    .stat-card {
-        padding: 16px;
-    }
-
-    .stat-card-value {
-        font-size: 1.2rem;
-    }
-
-    .stat-card-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-    }
-
-    .stat-card-label {
-        font-size: 0.75rem;
-    }
-
-    .listing-features {
-        gap: 4px;
-    }
-
-    .feature-tag {
-        font-size: 0.7rem;
-        padding: 3px 8px;
-    }
-
-    .detail-main-image {
-        height: 160px;
-    }
-
-    .detail-thumbnails {
-        padding: 6px 10px;
-    }
-
-    .detail-thumb {
-        width: 48px;
-        height: 36px;
-    }
-
-    .modal-content {
-        padding: 20px 16px;
-    }
-
-    .modal-header h2 {
         font-size: 1.1rem;
     }
 
-    .google-login-divider {
-        margin: 16px 0;
+    .stat-label {
+        font-size: 0.7rem;
     }
 
-    .btn-google {
-        font-size: 0.85rem;
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.9rem;
     }
 
-    .section-title {
-        font-size: 1.4rem;
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
 
-    .section-subtitle {
-        font-size: 0.85rem;
+    .listing-features {
+        gap: 6px;
     }
 
-    .feature-card {
-        padding: 20px 16px;
+    .feature-tag {
+        font-size: 0.75rem;
+        padding: 4px 10px;
     }
 
-    .feature-icon {
-        width: 48px;
-        height: 48px;
+    .detail-main-image {
+        height: 180px;
     }
 
-    .feature-icon i {
-        font-size: 1.2rem;
+    .detail-thumbnails {
+        padding: 8px 12px;
     }
 
-    .feature-card h3 {
-        font-size: 1rem;
-    }
-
-    .feature-card p {
-        font-size: 0.8rem;
-    }
-
-    .cta-content h2 {
-        font-size: 1.4rem;
-    }
-
-    .cta-content p {
-        font-size: 0.85rem;
-    }
-
-    .footer-brand p {
-        font-size: 0.85rem;
-    }
-
-    .footer-links h4,
-    .footer-contact h4 {
-        font-size: 0.95rem;
-    }
-
-    .footer-links ul li,
-    .footer-contact ul li {
-        font-size: 0.85rem;
-    }
-
-    .footer-bottom {
-        font-size: 0.8rem;
+    .detail-thumb {
+        width: 56px;
+        height: 42px;
     }
 }
 

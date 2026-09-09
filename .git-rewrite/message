@@ -1,0 +1,1 @@
+Remove .env files from git tracking - add to gitignore

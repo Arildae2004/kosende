@@ -1,0 +1,6 @@
+tree 8daaf506435bcf75a4d8acfb19c78f12e1d254ad
+parent 9894e82929162a226f337eda6324382819ac0fd0
+author Arildae2004 <arildae2004@gmail.com> 1788973943 +0700
+committer Arildae2004 <arildae2004@gmail.com> 1788973943 +0700
+
+Remove .env files from git tracking - add to gitignore
