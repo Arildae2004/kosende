@@ -1129,6 +1129,50 @@ input, select, textarea {
     border-top: 1px solid var(--gray-100);
 }
 
+/* Google Login Button */
+.google-login-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 24px 0;
+    color: var(--gray-400);
+    font-size: 0.9rem;
+}
+
+.google-login-divider::before,
+.google-login-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.google-login-divider span {
+    padding: 0 16px;
+}
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: white;
+    color: var(--gray-700);
+    border: 1.5px solid var(--gray-200);
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: all var(--transition-base);
+}
+
+.btn-google:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.google-icon {
+    flex-shrink: 0;
+}
+
 .modal-footer a {
     color: var(--primary-600);
     font-weight: 600;

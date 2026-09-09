@@ -329,6 +329,50 @@ async function handleLogin(e) {
     }
 }
 
+/**
+ * Login with Google OAuth
+ */
+function loginWithGoogle() {
+    // Redirect to Google OAuth page
+    window.location.href = '/api/auth/google';
+}
+
+/**
+ * Handle Google OAuth callback (check URL for token)
+ */
+function handleGoogleCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const login = urlParams.get('login');
+    const error = urlParams.get('error');
+
+    if (token && login === 'success') {
+        localStorage.setItem('token', token);
+        state.token = token;
+
+        // Get user info
+        api('/auth/me').then(result => {
+            if (result.success) {
+                state.user = result.data.user;
+                updateUIForLoggedInUser();
+                showToast('success', 'Berhasil!', 'Selamat datang di KosEnde');
+            }
+        });
+
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (error) {
+        let errorMessage = 'Login dengan Google gagal';
+        if (error === 'google_auth_denied') {
+            errorMessage = 'Login dibatalkan';
+        } else if (error === 'google_auth_failed') {
+            errorMessage = 'Autentikasi Google gagal';
+        }
+        showToast('error', 'Gagal', errorMessage);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
 async function handleRegister(e) {
     e.preventDefault();
     const name = document.getElementById('registerName').value;
@@ -2300,6 +2344,9 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 KosEnde loaded');
     initNavigation();
     loadListings();
+
+    // Handle Google OAuth callback
+    handleGoogleCallback();
 
     // Check if user is already logged in
     if (state.token) {
