@@ -65,13 +65,19 @@ function safeInnerHTML(element, html) {
 // API HELPER
 // =====================================================
 async function api(endpoint, options = {}) {
-    const url = `${API_BASE}${endpoint}`;
+    // Add cache-busting timestamp
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const url = `${API_BASE}${endpoint}${separator}_t=${Date.now()}`;
     const config = {
         headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
             ...options.headers,
         },
         ...options,
+        cache: 'no-store',
     };
 
     if (state.token) {
