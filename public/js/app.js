@@ -157,12 +157,11 @@ document.addEventListener('keydown', (e) => {
 });
 
 // =====================================================
-// NAVIGATION
+// NAVIGATION & MOBILE MENU
 // =====================================================
 function initNavigation() {
     const navbar = document.getElementById('navbar');
     const mobileToggle = document.getElementById('mobileToggle');
-    const navLinks = document.getElementById('navLinks');
 
     // Scroll effect
     window.addEventListener('scroll', () => {
@@ -173,15 +172,130 @@ function initNavigation() {
         }
     });
 
+    // Create mobile menu if it doesn't exist
+    createMobileMenu();
+
     // Mobile toggle
     if (mobileToggle) {
-        mobileToggle.addEventListener('click', () => {
-            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+        mobileToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMobileMenu();
         });
     }
 
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const mobileMenu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('mobileMenuOverlay');
+        if (mobileMenu && mobileMenu.classList.contains('active')) {
+            if (!mobileMenu.contains(e.target) && !mobileToggle.contains(e.target)) {
+                closeMobileMenu();
+            }
+        }
+    });
+
+    // Close mobile menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeMobileMenu();
+        }
+    });
+
     // Nav link clicks - menggunakan onclick handler dari HTML
     // Jangan add event listener lagi karena sudah ada onclick di HTML
+}
+
+function createMobileMenu() {
+    if (document.getElementById('mobileMenu')) return;
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'mobile-menu-overlay';
+    overlay.id = 'mobileMenuOverlay';
+    overlay.onclick = closeMobileMenu;
+
+    // Create mobile menu
+    const mobileMenu = document.createElement('div');
+    mobileMenu.className = 'mobile-menu';
+    mobileMenu.id = 'mobileMenu';
+
+    // Get auth state
+    const isLoggedIn = !!state.token;
+    const user = state.user;
+
+    mobileMenu.innerHTML = `
+        <div class="mobile-menu-header">
+            <a href="/" class="logo">
+                <i class="fas fa-home"></i>
+                <span>KosEnde</span>
+            </a>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mobile-menu-links">
+            <a href="#" class="mobile-menu-link ${state.currentPage === 'home' ? 'active' : ''}" onclick="goToHome(); closeMobileMenu(); return false;">
+                <i class="fas fa-home"></i> Beranda
+            </a>
+            <a href="#" class="mobile-menu-link ${state.currentPage === 'listings' ? 'active' : ''}" onclick="goToListings(); closeMobileMenu(); return false;">
+                <i class="fas fa-search"></i> Cari Kos
+            </a>
+            <a href="#" class="mobile-menu-link ${state.currentPage === 'about' ? 'active' : ''}" onclick="goToAbout(); closeMobileMenu(); return false;">
+                <i class="fas fa-info-circle"></i> Tentang
+            </a>
+            ${isLoggedIn ? `
+                <a href="#" class="mobile-menu-link" onclick="goToDashboard(); closeMobileMenu(); return false;">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            ` : ''}
+        </div>
+        <div class="mobile-menu-actions">
+            ${isLoggedIn ? `
+                <button class="btn btn-danger" onclick="handleLogout(); closeMobileMenu();">
+                    <i class="fas fa-sign-out-alt"></i> Keluar
+                </button>
+            ` : `
+                <button class="btn btn-primary" onclick="showModal('loginModal'); closeMobileMenu();">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+                <button class="btn btn-ghost" onclick="showModal('registerModal'); closeMobileMenu();">
+                    <i class="fas fa-user-plus"></i> Daftar
+                </button>
+            `}
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(mobileMenu);
+}
+
+function openMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    if (mobileMenu && overlay) {
+        mobileMenu.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    if (mobileMenu && overlay) {
+        mobileMenu.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+function updateMobileMenu() {
+    // Recreate mobile menu when auth state changes
+    const existingMenu = document.getElementById('mobileMenu');
+    const existingOverlay = document.getElementById('mobileMenuOverlay');
+    if (existingMenu) existingMenu.remove();
+    if (existingOverlay) existingOverlay.remove();
+    createMobileMenu();
 }
 
 // =====================================================
@@ -240,6 +354,7 @@ function logout() {
     localStorage.removeItem('token');
     showToast('info', 'Keluar', 'Anda telah keluar dari akun');
     updateUIForLoggedOutUser();
+    updateMobileMenu();
     window.location.reload();
 }
 
@@ -263,6 +378,9 @@ function updateUIForLoggedInUser() {
             <li><a href="#" class="nav-link" data-page="listings" onclick="goToListings(); return false;">Cari Kos</a></li>
             <li><a href="#" class="nav-link" data-page="about" onclick="goToAbout(); return false;">Tentang</a></li>
         `;
+
+        // Update mobile menu
+        updateMobileMenu();
     }
 }
 
