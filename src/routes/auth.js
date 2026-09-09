@@ -13,7 +13,7 @@ router.post('/login', authRateLimiter, validateLogin, authController.login);
 
 // Google OAuth routes
 router.get('/google', googleAuthController.googleAuth);
-router.get('/callback/google', googleAuthController.googleCallback);
+router.get('/google/callback', googleAuthController.googleCallback);
 router.post('/google/login', googleAuthController.googleLogin);
 
 // Google OAuth debug route (remove in production)
@@ -39,7 +39,7 @@ router.get('/google/debug', (req, res) => {
             '6. Go to APIs & Services > Credentials',
             '7. Click on your OAuth Client ID',
             '8. In Authorized redirect URIs, make sure you have EXACTLY:',
-            '   http://localhost:3000/api/auth/callback/google',
+            '   https://kosende-production.up.railway.app/api/auth/google/callback',
             '9. Save changes'
         ]
     });
