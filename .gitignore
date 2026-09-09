@@ -6,6 +6,7 @@ node_modules/
 .env.local
 .env.production
 .env.hostinger
+.env.backup
 
 # Logs
 logs/
