@@ -38,9 +38,18 @@ async function getGoogleUserInfo(tokens) {
     return ticket.getPayload();
 }
 
+function getConfig() {
+    return {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        redirectUri: process.env.GOOGLE_REDIRECT_URI,
+        clientSecretExists: !!process.env.GOOGLE_CLIENT_SECRET,
+    };
+}
+
 module.exports = {
     googleClient,
     getGoogleAuthUrl,
     getGoogleTokens,
     getGoogleUserInfo,
+    getConfig,
 };
