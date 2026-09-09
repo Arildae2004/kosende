@@ -18,8 +18,8 @@ function getGoogleAuthUrl(state = '') {
         redirect_uri: googleClient.redirectUri,
         response_type: 'code',
         scope: GOOGLE_SCOPES.join(' '),
-        access_type: 'offline',
-        prompt: 'consent',
+        access_type: 'online',
+        prompt: 'select_account',
         state,
     });
     return `${GOOGLE_AUTH_URL}?${params.toString()}`;

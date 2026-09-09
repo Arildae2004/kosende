@@ -367,6 +367,15 @@ function handleGoogleCallback() {
             errorMessage = 'Login dibatalkan';
         } else if (error === 'google_auth_failed') {
             errorMessage = 'Autentikasi Google gagal';
+        } else if (error === 'google_token_error') {
+            errorMessage = 'Gagal mendapatkan token dari Google';
+        } else if (error === 'google_userinfo_error') {
+            errorMessage = 'Gagal mendapatkan info user dari Google';
+        }
+        const desc = urlParams.get('desc');
+        if (desc) {
+            errorMessage += ': ' + desc;
+            console.error('Google auth error detail:', desc);
         }
         showToast('error', 'Gagal', errorMessage);
         window.history.replaceState({}, document.title, window.location.pathname);

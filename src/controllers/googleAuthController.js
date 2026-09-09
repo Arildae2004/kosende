@@ -18,21 +18,38 @@ class GoogleAuthController {
      */
     async googleCallback(req, res) {
         try {
-            const { code, error } = req.query;
+            const { code, error, error_description } = req.query;
+
+            // Log all query params for debugging
+            console.log('Google callback query params:', req.query);
 
             if (error) {
-                return res.redirect('/?error=google_auth_denied');
+                console.error('Google auth error from query:', error, error_description);
+                const desc = error_description || error;
+                return res.redirect(`/?error=google_auth_denied&desc=${encodeURIComponent(desc)}`);
             }
 
             if (!code) {
-                return res.redirect('/?error=google_auth_failed');
+                return res.redirect('/?error=google_auth_failed&desc=No authorization code received');
             }
 
             // Get tokens from Google
-            const tokens = await getGoogleTokens(code);
+            let tokens;
+            try {
+                tokens = await getGoogleTokens(code);
+            } catch (tokenError) {
+                console.error('Google getToken error:', tokenError.message);
+                return res.redirect(`/?error=google_token_error&desc=${encodeURIComponent(tokenError.message)}`);
+            }
 
             // Get user info from Google
-            const googleUser = await getGoogleUserInfo(tokens);
+            let googleUser;
+            try {
+                googleUser = await getGoogleUserInfo(tokens);
+            } catch (userInfoError) {
+                console.error('Google getUserInfo error:', userInfoError.message);
+                return res.redirect(`/?error=google_userinfo_error&desc=${encodeURIComponent(userInfoError.message)}`);
+            }
 
             const { sub: googleId, email, name, picture } = googleUser;
 
@@ -79,7 +96,7 @@ class GoogleAuthController {
             res.redirect(`/?token=${token}&login=success`);
         } catch (error) {
             console.error('Google auth callback error:', error);
-            res.redirect('/?error=google_auth_error');
+            res.redirect(`/?error=google_auth_error&desc=${encodeURIComponent(error.message)}`);
         }
     }
 
