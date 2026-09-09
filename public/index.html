@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KosEnde - Platform Kos Terbaik di Ende NTT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-home"></i>
+                <span>KosEnde</span>
+            </a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#" class="nav-link active" data-page="home" onclick="goToHome(); return false;">Beranda</a></li>
+                <li><a href="#" class="nav-link" data-page="listings" onclick="goToListings(); return false;">Cari Kos</a></li>
+                <li><a href="#" class="nav-link" data-page="about" onclick="goToAbout(); return false;">Tentang</a></li>
+            </ul>
+            <div class="nav-actions" id="navActions">
+                <button class="btn btn-ghost" onclick="showModal('loginModal')">Masuk</button>
+                <button class="btn btn-primary" onclick="showModal('registerModal')">Daftar</button>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="mainContent">
+        <!-- Public Content Container -->
+        <div id="publicContent">
+
+            <!-- HOME PAGE -->
+            <div id="homePage" class="page-content">
+                <!-- Hero Section -->
+                <section class="hero" id="heroSection">
+                    <div class="hero-bg">
+                        <div class="hero-overlay"></div>
+                    </div>
+                    <div class="container">
+                        <div class="hero-content">
+                            <span class="hero-badge">
+                                <i class="fas fa-map-marker-alt"></i> Ende, NTT
+                            </span>
+                            <h1 class="hero-title">Temukan Kos Impian di <span class="text-gradient">Kota Ende</span></h1>
+                            <p class="hero-subtitle">Platform terpercaya untuk mencari kos nyaman, aman, dan terjangkau di wilayah Ende, Nusa Tenggara Timur</p>
+                            <div class="hero-search">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="searchInput" placeholder="Cari nama kos atau lokasi...">
+                                    <button class="btn btn-primary" onclick="searchListings()">Cari</button>
+                                </div>
+                            </div>
+                            <div class="hero-stats">
+                                <div class="stat-item">
+                                    <span class="stat-number" id="totalListings">0</span>
+                                    <span class="stat-label">Kos Tersedia</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">15+</span>
+                                    <span class="stat-label">Area Terdaftar</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">100%</span>
+                                    <span class="stat-label">Terverifikasi</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CTA Section -->
+                <section class="cta" id="ctaSection">
+                    <div class="container">
+                        <div class="cta-content">
+                            <h2>Pemilik Kos di Ende?</h2>
+                            <p>Daftarkan kos Anda sekarang dan jangkau lebih banyak penyewa potensial</p>
+                            <button class="btn btn-white" onclick="showModal('registerModal')">
+                                <i class="fas fa-plus"></i> Daftarkan Kos
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div><!-- end homePage -->
+
+            <!-- LISTINGS PAGE -->
+            <div id="listingsPage" class="page-content" style="display: none;">
+                <section class="listings-page-header">
+                    <div class="container">
+                        <h1><i class="fas fa-search"></i> Cari Kos di Ende</h1>
+                        <p>Temukan kos yang sesuai dengan kebutuhan dan budget Anda</p>
+                    </div>
+                </section>
+                <section class="listings" id="listingsSection">
+                    <div class="container">
+                        <div class="listings-filter">
+                            <div class="filter-group">
+                                <label>Kecamatan:</label>
+                                <select id="filterDistrict" onchange="filterListings()">
+                                    <option value="">Semua Kecamatan</option>
+                                    <option value="Ende">Ende</option>
+                                    <option value="Ende Selatan">Ende Selatan</option>
+                                    <option value="Ende Tengah">Ende Tengah</option>
+                                    <option value="Ende Timur">Ende Timur</option>
+                                    <option value="Ende Utara">Ende Utara</option>
+                                    <option value="Ndona">Ndona</option>
+                                    <option value="Detusoko">Detusoko</option>
+                                    <option value="Wewaria">Wewaria</option>
+                                    <option value="Lio Timur">Lio Timur</option>
+                                    <option value="Wolowaru">Wolowaru</option>
+                                    <option value="Kelimutu">Kelimutu</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Harga Max:</label>
+                                <select id="filterPrice" onchange="filterListings()">
+                                    <option value="">Semua Harga</option>
+                                    <option value="500000">Rp 500.000</option>
+                                    <option value="750000">Rp 750.000</option>
+                                    <option value="1000000">Rp 1.000.000</option>
+                                    <option value="1500000">Rp 1.500.000</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="listings-grid" id="listingsGrid">
+                            <!-- Listings will be loaded here -->
+                        </div>
+                        <div class="listings-empty" id="listingsEmpty" style="display: none;">
+                            <i class="fas fa-search"></i>
+                            <h3>Tidak ada kos ditemukan</h3>
+                            <p>Coba ubah filter pencarian Anda</p>
+                        </div>
+                    </div>
+                </section>
+            </div><!-- end listingsPage -->
+
+            <!-- ABOUT PAGE -->
+            <div id="aboutPage" class="page-content" style="display: none;">
+                <section class="about-page-header">
+                    <div class="container">
+                        <h1><i class="fas fa-info-circle"></i> Tentang KosEnde</h1>
+                        <p>Platform terpercaya untuk mencari kos di Ende, NTT</p>
+                    </div>
+                </section>
+
+                <!-- Features Section -->
+                <section class="features" id="featuresSection">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-badge">Fitur Kami</span>
+                            <h2 class="section-title">Mengapa Memilih KosEnde?</h2>
+                            <p class="section-subtitle">Kami menyediakan pengalaman terbaik dalam mencari kos di Ende</p>
+                        </div>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <h3>Terverifikasi</h3>
+                                <p>Semua listing kos telah diverifikasi admin untuk memastikan keakuratan informasi</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </div>
+                                <h3>Lokasi Akurat</h3>
+                                <p>Hanya menerima listing di wilayah Ende, NTT dengan alamat yang valid</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <h3>Proses Cepat</h3>
+                                <p>Listing akan diapprove dalam 1x24 jam setelah pengajuan oleh pemilik</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                </div>
+                                <h3>Harga Transparan</h3>
+                                <p>Harga yang tertera sudah termasuk semua biaya, tanpa biaya tersembunyi</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- About Info Section -->
+                <section class="about-info">
+                    <div class="container">
+                        <div class="about-grid">
+                            <div class="about-card">
+                                <div class="about-icon">
+                                    <i class="fas fa-bullseye"></i>
+                                </div>
+                                <h3>Misi Kami</h3>
+                                <p>Menghubungkan pemilik kos dengan pencari kos di wilayah Ende, NTT secara mudah, transparan, dan terpercaya.</p>
+                            </div>
+                            <div class="about-card">
+                                <div class="about-icon">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <h3>Visi Kami</h3>
+                                <p>Menjadi platform nomor satu untuk pencarian kos di daerah Nusa Tenggara Timur.</p>
+                            </div>
+                            <div class="about-card">
+                                <div class="about-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <h3>Nilai Kami</h3>
+                                <p>Kejujuran, transparansi, dan pelayanan terbaik adalah fondasi yang kami bangun.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Contact Section -->
+                <section class="contact-section">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-badge">Hubungi Kami</span>
+                            <h2 class="section-title">Ada Pertanyaan?</h2>
+                            <p class="section-subtitle">Jangan ragu untuk menghubungi kami</p>
+                        </div>
+                        <div class="contact-grid">
+                            <div class="contact-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <h4>Lokasi</h4>
+                                <p>Ende, Nusa Tenggara Timur</p>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <h4>Email</h4>
+                                <p>infokosende@gmail.com</p>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <h4>Telepon</h4>
+                                <p>082359282149</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div><!-- end aboutPage -->
+
+        </div><!-- end publicContent -->
+        <!-- Dashboard Container (hidden by default) -->
+        <div id="dashboardContainer" style="display: none;"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-home"></i>
+                        <span>KosEnde</span>
+                    </a>
+                    <p>Platform terpercaya untuk mencari kos terbaik di Ende, Nusa Tenggara Timur.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="https://wa.me/6282359282149" target="_blank"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Navigasi</h4>
+                    <ul>
+                        <li><a href="#">Beranda</a></li>
+                        <li><a href="#">Cari Kos</a></li>
+                        <li><a href="#">Tentang Kami</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Untuk Owner</h4>
+                    <ul>
+                        <li><a href="#" onclick="showModal('registerModal')">Daftar</a></li>
+                        <li><a href="#" onclick="showModal('loginModal')">Masuk</a></li>
+                        <li><a href="#" onclick="showModal('panduanModal')">Panduan</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h4>Kontak</h4>
+                    <ul>
+                        <li><i class="fas fa-map-marker-alt"></i> Ende, NTT</li>
+                        <li><i class="fas fa-envelope"></i> infokosende@gmail.com</li>
+                        <li><i class="fas fa-phone"></i> 082359282149</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 KosEnde. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-overlay" onclick="closeModal('loginModal')"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('loginModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2>Selamat Datang Kembali</h2>
+                <p>Masuk ke akun KosEnde Anda</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="loginEmail" placeholder="Masukkan email" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginPassword" placeholder="Masukkan password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span>Masuk</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            <div class="modal-footer">
+                <p>Belum punya akun? <a href="#" onclick="switchModal('loginModal', 'registerModal')">Daftar sekarang</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-overlay" onclick="closeModal('registerModal')"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('registerModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h2>Daftar Sebagai Owner</h2>
+                <p>Mulai promosikan kos Anda secara gratis selama 14 hari</p>
+            </div>
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="registerName">Nama Lengkap</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="registerName" placeholder="Masukkan nama lengkap" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="registerEmail" placeholder="Masukkan email" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="registerPhone">No. Telepon</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" id="registerPhone" placeholder="Masukkan no. telepon" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="registerPassword" placeholder="Buat password (min. 6 karakter)" minlength="6" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="registerRole">Daftar sebagai</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-tag"></i>
+                        <select id="registerRole" required>
+                            <option value="owner">Pemilik Kos</option>
+                            <option value="viewer">Pencari Kos</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span>Daftar Sekarang</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            <div class="modal-footer">
+                <p>Sudah punya akun? <a href="#" onclick="switchModal('registerModal', 'loginModal')">Masuk</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panduan Modal -->
+    <div class="modal" id="panduanModal">
+        <div class="modal-overlay" onclick="closeModal('panduanModal')"></div>
+        <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close" onclick="closeModal('panduanModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h2>Panduan Penggunaan KosEnde</h2>
+                <p>Panduan lengkap menggunakan platform KosEnde</p>
+            </div>
+            <div class="panduan-content">
+                <div class="panduan-section">
+                    <h3><i class="fas fa-user-plus"></i> Untuk Pemilik Kos (Owner)</h3>
+                    <ol class="panduan-list">
+                        <li><strong>Daftar Akun</strong> - Klik tombol "Daftar" di pojok kanan atas, pilih role "Pemilik Kos"</li>
+                        <li><strong>Lengkapi Profil</strong> - Isi nama lengkap, email, nomor telepon, dan password</li>
+                        <li><strong>Login</strong> - Masuk menggunakan email dan password yang sudah didaftarkan</li>
+                        <li><strong>Tambah Kos</strong> - Klik "Tambah Kos" di dashboard, lengkapi data kos:
+                            <ul>
+                                <li>Judul kos (contoh: "Kos Nyaman Ende")</li>
+                                <li>Deskripsi kos</li>
+                                <li>Kecamatan dan Kelurahan/Desa</li>
+                                <li>Alamat lengkap</li>
+                                <li>Harga per bulan</li>
+                                <li>Ukuran kamar</li>
+                                <li>Fasilitas (pisahkan dengan koma: AC, WiFi, Kamar Mandi Dalam)</li>
+                                <li>Foto kos (maksimal 5 foto, ukuran max 5MB per foto)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Tunggu Verifikasi</strong> - Admin akan mengecek dan mengapprove listing Anda dalam 1x24 jam</li>
+                        <li><strong>Kelola Listing</strong> - Setelah diapprove, listing Anda bisa dilihat pencari kos</li>
+                        <li><strong>Perpanjang Langganan</strong> - Jika trial 12 hari habis, lakukan pembayaran Rp 50.000/bulan ke:
+                            <ul>
+                                <li><strong>Bank BNI: 1886420281</strong></li>
+                                <li><strong>a.n. Oktavianus Avilaryl Nggai Dae</strong></li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="panduan-section">
+                    <h3><i class="fas fa-search"></i> Untuk Pencari Kos (Viewer)</h3>
+                    <ol class="panduan-list">
+                        <li><strong>Cari Kos</strong> - Klik "Cari Kos" di navbar atau gunakan kolom pencarian di halaman beranda</li>
+                        <li><strong>Filter Pencarian</strong> - Gunakan filter berdasarkan:
+                            <ul>
+                                <li>Kecamatan (Ende, Ende Selatan, Ende Tengah, dll)</li>
+                                <li>Harga maksimal (Rp 500.000 - Rp 1.500.000)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Lihat Detail</strong> - Klik card kos untuk melihat detail lengkap:
+                            <ul>
+                                <li>Foto kos</li>
+                                <li>Alamat lengkap</li>
+                                <li>Harga dan fasilitas</li>
+                                <li>Informasi pemilik</li>
+                            </ul>
+                        </li>
+                        <li><strong>Hubungi Pemilik</strong> - Klik tombol WhatsApp untuk langsung menghubungi pemilik kos</li>
+                    </ol>
+                </div>
+
+                <div class="panduan-section">
+                    <h3><i class="fas fa-shield-alt"></i> Keamanan & Privasi</h3>
+                    <ul class="panduan-list">
+                        <li>Data Anda tersimpan aman dengan enkripsi</li>
+                        <li>Password di-hash menggunakan bcrypt</li>
+                        <li>Listing diverifikasi admin sebelum ditampilkan</li>
+                        <li>Komunikasi dilakukan langsung antara pencari dan pemilik via WhatsApp</li>
+                    </ul>
+                </div>
+
+                <div class="panduan-section">
+                    <h3><i class="fas fa-headset"></i> Bantuan & Kontak</h3>
+                    <ul class="panduan-list">
+                        <li><strong>Email:</strong> infokosende@gmail.com</li>
+                        <li><strong>WhatsApp:</strong> 082359282149</li>
+                        <li><strong>Alamat:</strong> Ende, Nusa Tenggara Timur</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/app.js?v=3"></script>
+</body>
+</html>

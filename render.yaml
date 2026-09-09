@@ -1,0 +1,29 @@
+# Render Blueprint for KosEnde
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Web Service
+  - type: web
+    name: kosende
+    env: node
+    plan: free
+    buildCommand: npm install && npm run migrate
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kosende-db
+          property: connectionString
+
+databases:
+  - name: kosende-db
+    plan: free
+    databaseName: kosende
+    user: kosende
