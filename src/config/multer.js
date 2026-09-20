@@ -33,11 +33,13 @@ const fileFilter = (req, file, cb) => {
 };
 
 // Configure multer
+// Catatan: gambar dikompresi di sisi client (canvas → WebP, max 1280px)
+// sebelum diupload, sehingga limit server 2MB sudah longgar.
 const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB max per file
+        fileSize: 2 * 1024 * 1024, // 2MB max per file (sudah dikompresi client)
         files: 5 // max 5 files
     }
 });
@@ -48,7 +50,7 @@ const handleMulterError = (err, req, res, next) => {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 success: false,
-                message: 'Ukuran file terlalu besar. Maksimal 5MB per file.'
+                message: 'Ukuran file terlalu besar. Maksimal 2MB per file (gambar otomatis dikompresi saat upload).'
             });
         }
         if (err.code === 'LIMIT_FILE_COUNT') {

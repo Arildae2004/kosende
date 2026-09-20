@@ -13,6 +13,10 @@ class ListingService {
             price_monthly,
             deposit,
             room_size,
+            kos_type,
+            latitude,
+            longitude,
+            maps_url,
             facilities,
             images,
         } = listingData;
@@ -25,8 +29,9 @@ class ListingService {
             const result = await client.query(
                 `INSERT INTO listings (
                     owner_id, location_id, title, description, address,
-                    price_monthly, deposit, room_size, facilities, images, status
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
+                    price_monthly, deposit, room_size, kos_type,
+                    latitude, longitude, maps_url, facilities, images, status
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
                 RETURNING *`,
                 [
                     ownerId,
@@ -37,6 +42,10 @@ class ListingService {
                     price_monthly,
                     deposit || 0,
                     room_size || null,
+                    ['putra', 'putri', 'campur', 'pasutri'].includes(kos_type) ? kos_type : 'campur',
+                    latitude || null,
+                    longitude || null,
+                    maps_url || null,
                     JSON.stringify(facilities || []),
                     JSON.stringify(images || []),
                 ]
@@ -75,15 +84,21 @@ class ListingService {
     }
 
     /**
-     * Get listing by ID
+     * Get listing by ID (with rating aggregate)
      */
     async getListingById(listingId) {
         const result = await db.query(
             `SELECT l.*, loc.village, loc.district, loc.city, loc.province,
-                    u.name AS owner_name, u.email AS owner_email, u.phone AS owner_phone
+                    u.name AS owner_name, u.email AS owner_email, u.phone AS owner_phone,
+                    COALESCE(r.avg_rating, 0)::FLOAT AS avg_rating,
+                    COALESCE(r.review_count, 0)::INT AS review_count
              FROM listings l
              LEFT JOIN locations loc ON l.location_id = loc.id
              JOIN users u ON l.owner_id = u.id
+             LEFT JOIN (
+                 SELECT listing_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                 FROM reviews GROUP BY listing_id
+             ) r ON r.listing_id = l.id
              WHERE l.id = $1`,
             [listingId]
         );
@@ -273,7 +288,8 @@ class ListingService {
     async updateListing(listingId, ownerId, updateData) {
         const allowedFields = [
             'location_id', 'title', 'description', 'address',
-            'price_monthly', 'deposit', 'room_size', 'facilities', 'images',
+            'price_monthly', 'deposit', 'room_size', 'kos_type',
+            'latitude', 'longitude', 'maps_url', 'facilities', 'images',
         ];
 
         const updates = [];
@@ -282,8 +298,11 @@ class ListingService {
 
         for (const [key, value] of Object.entries(updateData)) {
             if (allowedFields.includes(key)) {
+                if (key === 'kos_type' && !['putra', 'putri', 'campur', 'pasutri'].includes(value)) {
+                    continue;
+                }
                 updates.push(`${key} = $${paramIndex++}`);
-                params.push(Array.isArray(value) ? JSON.stringify(value) : value);
+                params.push(Array.isArray(value) ? JSON.stringify(value) : (value === '' ? null : value));
             }
         }
 
@@ -373,17 +392,24 @@ class ListingService {
     }
 
     /**
-     * Get active listings (public)
+     * Get active listings (public) with rating aggregate + new filters
      */
     async getActiveListings(filters = {}) {
         let query = `
             SELECT l.id, l.title, l.description, l.address, l.price_monthly,
-                   l.room_size, l.facilities, l.images, l.created_at,
+                   l.room_size, l.kos_type, l.latitude, l.longitude, l.maps_url,
+                   l.facilities, l.images, l.created_at,
                    u.name AS owner_name, u.phone AS owner_phone,
-                   loc.village, loc.district, loc.city, loc.province
+                   loc.village, loc.district, loc.city, loc.province,
+                   COALESCE(r.avg_rating, 0)::FLOAT AS avg_rating,
+                   COALESCE(r.review_count, 0)::INT AS review_count
             FROM listings l
             JOIN users u ON l.owner_id = u.id
             LEFT JOIN locations loc ON l.location_id = loc.id
+            LEFT JOIN (
+                SELECT listing_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                FROM reviews GROUP BY listing_id
+            ) r ON r.listing_id = l.id
             WHERE l.is_active = true AND l.status = 'approved'
         `;
         const params = [];
@@ -402,6 +428,29 @@ class ListingService {
         if (filters.max_price) {
             query += ` AND l.price_monthly <= $${paramIndex++}`;
             params.push(filters.max_price);
+        }
+
+        if (filters.kos_type) {
+            query += ` AND l.kos_type = $${paramIndex++}`;
+            params.push(filters.kos_type);
+        }
+
+        if (filters.facility) {
+            // cocokkan salah satu fasilitas (case-insensitive) di kolom JSONB
+            query += ` AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements_text(l.facilities) AS f
+                WHERE f ILIKE $${paramIndex++}
+            )`;
+            params.push(`%${filters.facility}%`);
+        }
+
+        if (filters.search) {
+            query += ` AND (
+                l.title ILIKE $${paramIndex} OR l.address ILIKE $${paramIndex}
+                OR loc.village ILIKE $${paramIndex} OR loc.district ILIKE $${paramIndex}
+            )`;
+            params.push(`%${filters.search}%`);
+            paramIndex++;
         }
 
         query += ` ORDER BY l.created_at DESC`;

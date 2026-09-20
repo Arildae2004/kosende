@@ -109,6 +109,11 @@ CREATE TABLE listings (
     price_monthly DECIMAL(12, 2) NOT NULL,
     deposit DECIMAL(12, 2) DEFAULT 0,
     room_size VARCHAR(50),                  -- contoh: "3x4 meter"
+    kos_type VARCHAR(20) NOT NULL DEFAULT 'campur'
+        CHECK (kos_type IN ('putra', 'putri', 'campur', 'pasutri')),
+    latitude DECIMAL(10, 8),                -- pin point untuk peta
+    longitude DECIMAL(11, 8),
+    maps_url VARCHAR(500),                  -- link Google Maps owner (opsional)
     facilities JSONB DEFAULT '[]'::jsonb,   -- ["AC", "WiFi", "Kamar Mandi Dalam"]
     images JSONB DEFAULT '[]'::jsonb,       -- array of image URLs
     status listing_status NOT NULL DEFAULT 'pending',
@@ -118,6 +123,19 @@ CREATE TABLE listings (
     rejection_reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =====================================================
+-- TABEL REVIEWS (Ulasan & rating penghuni)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewer_name VARCHAR(100) NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================
@@ -148,6 +166,9 @@ CREATE INDEX idx_listings_owner_id ON listings(owner_id);
 CREATE INDEX idx_listings_status ON listings(status);
 CREATE INDEX idx_listings_location_id ON listings(location_id);
 CREATE INDEX idx_listings_is_active ON listings(is_active);
+CREATE INDEX idx_listings_kos_type ON listings(kos_type);
+CREATE INDEX idx_reviews_listing_id ON reviews(listing_id);
+CREATE INDEX idx_reviews_rating ON reviews(rating);
 CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
 CREATE INDEX idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
 

@@ -12,7 +12,52 @@ const state = {
     token: localStorage.getItem('token'),
     listings: [],
     currentPage: 'home',
+    searchQuery: '',
+    showFavoritesOnly: false,
 };
+
+const KOS_TYPE_LABELS = {
+    putra: 'Putra',
+    putri: 'Putri',
+    campur: 'Campur',
+    pasutri: 'Pasutri',
+};
+
+// =====================================================
+// FAVORITES (tersimpan di localStorage perangkat)
+// =====================================================
+const FAV_KEY = 'kosende_favorites';
+
+function getFavorites() {
+    try {
+        return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]'));
+    } catch (e) {
+        return new Set();
+    }
+}
+
+function isFavorite(id) {
+    return getFavorites().has(String(id));
+}
+
+function toggleFavorite(event, id) {
+    if (event) event.stopPropagation();
+    const favs = getFavorites();
+    id = String(id);
+    if (favs.has(id)) {
+        favs.delete(id);
+        showToast('info', 'Dihapus', 'Kos dihapus dari daftar favorit');
+    } else {
+        favs.add(id);
+        showToast('success', 'Tersimpan', 'Kos ditambahkan ke favorit');
+    }
+    localStorage.setItem(FAV_KEY, JSON.stringify([...favs]));
+    // Refresh tampilan aktif
+    if (document.getElementById('listingsPage').style.display !== 'none') {
+        filterListings();
+    }
+    renderFeatured();
+}
 
 // =====================================================
 // SECURITY - XSS PROTECTION
@@ -536,6 +581,8 @@ async function loadListings() {
         state.listings = result.data;
         document.getElementById('totalListings').textContent = result.data.length;
 
+        renderFeatured();
+
         if (result.data.length === 0) {
             grid.style.display = 'none';
             empty.style.display = 'block';
@@ -547,26 +594,75 @@ async function loadListings() {
     }
 }
 
-function renderListings(listings) {
-    const grid = document.getElementById('listingsGrid');
+/**
+ * Render kos pilihan di beranda (6 terbaru, mengatasi kesan halaman kosong)
+ */
+function renderFeatured() {
+    const grid = document.getElementById('featuredGrid');
+    if (!grid) return;
+
+    const items = state.listings.slice(0, 6);
+    if (items.length === 0) {
+        grid.innerHTML = `
+            <div class="featured-empty">
+                <i class="fas fa-home"></i>
+                <h3>Kos di Ende segera hadir</h3>
+                <p>Jadilah owner pertama yang mendaftarkan kos di KosEnde — gratis 14 hari.</p>
+                <button class="btn btn-primary" onclick="showModal('registerModal')">
+                    <i class="fas fa-plus"></i> Daftarkan Kos
+                </button>
+            </div>`;
+        return;
+    }
+    renderListings(items, 'featuredGrid');
+}
+
+/**
+ * Bintang rating (dukungan setengah via pembulatan)
+ */
+function renderStars(avg) {
+    const full = Math.round(parseFloat(avg) || 0);
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        stars += `<i class="fas fa-star ${i <= full ? 'star-filled' : 'star-empty'}"></i>`;
+    }
+    return stars;
+}
+
+function renderListings(listings, targetId = 'listingsGrid') {
+    const grid = document.getElementById(targetId);
+    if (!grid) return;
     grid.innerHTML = listings.map(listing => {
         // Escape all user data to prevent XSS
         const safeTitle = escapeHtml(listing.title);
         const safeVillage = escapeHtml(listing.village || '');
         const safeDistrict = escapeHtml(listing.district || 'Ende');
-        const safeAddress = escapeHtml(listing.address || '');
         const safeOwnerName = escapeHtml(listing.owner_name || '');
+        const kosType = listing.kos_type || 'campur';
+        const typeLabel = KOS_TYPE_LABELS[kosType] || 'Campur';
+        const fav = isFavorite(listing.id);
+        const avgRating = parseFloat(listing.avg_rating) || 0;
+        const reviewCount = parseInt(listing.review_count) || 0;
 
         const hasImage = listing.images && listing.images.length > 0;
         const imageHtml = hasImage
-            ? `<img src="${escapeHtml(listing.images[0])}" alt="${safeTitle}" onerror="this.parentElement.innerHTML='<div class=\'no-image\'><i class=\'fas fa-home\'></i></div>'">`
+            ? `<img src="${escapeHtml(listing.images[0])}" alt="${safeTitle}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'no-image\'><i class=\'fas fa-home\'></i></div>'">`
             : `<div class="no-image"><i class="fas fa-home"></i></div>`;
+
+        // Tautan WhatsApp dengan templat pesan otomatis
+        const waNumber = (listing.owner_phone || '').replace(/^0/, '62').replace(/[^0-9]/g, '');
+        const waText = encodeURIComponent(`Halo, saya lihat kos "${listing.title}" di KosEnde, apakah kamar masih tersedia?`);
+        const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : '#';
 
         return `
         <div class="listing-card" onclick="showListingDetail('${escapeHtml(listing.id)}')" style="cursor: pointer;">
             <div class="listing-image">
                 ${imageHtml}
                 <span class="listing-badge">Tersedia</span>
+                <span class="listing-type type-${escapeHtml(kosType)}">${escapeHtml(typeLabel)}</span>
+                <button class="fav-btn ${fav ? 'active' : ''}" title="Simpan ke favorit" onclick="toggleFavorite(event, '${escapeHtml(listing.id)}')">
+                    <i class="${fav ? 'fas' : 'far'} fa-heart"></i>
+                </button>
             </div>
             <div class="listing-content">
                 <div class="listing-price">
@@ -577,6 +673,11 @@ function renderListings(listings) {
                     <i class="fas fa-map-marker-alt"></i>
                     ${safeVillage}, ${safeDistrict}
                 </div>
+                ${reviewCount > 0 ? `
+                <div class="listing-rating">
+                    <span class="stars-inline">${renderStars(avgRating)}</span>
+                    <span class="rating-text">${avgRating.toFixed(1)} (${reviewCount} ulasan)</span>
+                </div>` : ''}
                 <div class="listing-features">
                     ${(listing.facilities || []).slice(0, 3).map(f =>
                         `<span class="feature-tag">${escapeHtml(f)}</span>`
@@ -590,7 +691,7 @@ function renderListings(listings) {
                         <span class="owner-name">${safeOwnerName}</span>
                     </div>
                     <div class="listing-contact">
-                        <a href="https://wa.me/${listing.owner_phone?.replace(/^0/, '62')}" target="_blank" class="btn btn-primary" onclick="event.stopPropagation();">
+                        <a href="${waLink}" target="_blank" class="btn btn-primary" onclick="event.stopPropagation();">
                             <i class="fab fa-whatsapp"></i> Hubungi
                         </a>
                     </div>
@@ -684,10 +785,29 @@ async function showListingDetail(listingId) {
         ? safeFacilities.map(f => `<span class="feature-tag">${escapeHtml(f)}</span>`).join('')
         : '<span class="text-muted">Tidak ada fasilitas terdaftar</span>';
 
-    // WhatsApp link
-    const waLink = safeOwnerPhone
-        ? `https://wa.me/${safeOwnerPhone.replace(/^0/, '62')}`
-        : '#';
+    // WhatsApp link dengan templat pesan otomatis (fast response)
+    const waNumber = (safeOwnerPhone || '').replace(/^0/, '62').replace(/[^0-9]/g, '');
+    const waText = encodeURIComponent(`Halo, saya lihat kos "${listing.title || ''}" di KosEnde, apakah kamar masih tersedia?`);
+    const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : '#';
+
+    // Peta interaktif (OpenStreetMap embed, gratis tanpa API key)
+    const hasCoords = listing.latitude && listing.longitude;
+    const mapLat = parseFloat(listing.latitude) || -8.8400;
+    const mapLng = parseFloat(listing.longitude) || 121.6600;
+    const bbox = hasCoords
+        ? `${mapLng - 0.008},${mapLat - 0.005},${mapLng + 0.008},${mapLat + 0.005}`
+        : '121.6000,-8.8800,121.7200,-8.8000'; // fallback: kota Ende
+    const marker = hasCoords ? `&marker=${mapLat},${mapLng}` : '';
+    const osmEmbed = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${marker}`;
+    const gmapsLink = hasCoords
+        ? `https://www.google.com/maps/search/?api=1&query=${mapLat},${mapLng}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((listing.address || 'Ende') + ', Ende, NTT')}`;
+    const ownerMapsLink = listing.maps_url || gmapsLink;
+
+    const kosTypeLabel = KOS_TYPE_LABELS[listing.kos_type] || 'Campur';
+    const avgRating = parseFloat(listing.avg_rating) || 0;
+    const reviewCount = parseInt(listing.review_count) || 0;
+    const favActive = isFavorite(listing.id);
 
     const detailHtml = `
         <div class="modal active" id="listingDetailModal">
@@ -703,7 +823,13 @@ async function showListingDetail(listingId) {
                 <!-- Content -->
                 <div class="detail-content">
                     <div class="detail-header">
-                        <h2 class="detail-title">${safeTitle}</h2>
+                        <div>
+                            <h2 class="detail-title">${safeTitle}</h2>
+                            <div class="detail-meta-row">
+                                <span class="listing-type type-${escapeHtml(listing.kos_type || 'campur')}">${escapeHtml(kosTypeLabel)}</span>
+                                ${reviewCount > 0 ? `<span class="detail-rating-inline">${renderStars(avgRating)} <strong>${avgRating.toFixed(1)}</strong> (${reviewCount} ulasan)</span>` : '<span class="detail-rating-inline text-muted">Belum ada ulasan</span>'}
+                            </div>
+                        </div>
                         <div class="detail-price">Rp ${formatNumber(listing.price_monthly)} <span>/ bulan</span></div>
                     </div>
 
@@ -737,6 +863,19 @@ async function showListingDetail(listingId) {
                         </div>
                     </div>
 
+                    <div class="detail-section">
+                        <h4><i class="fas fa-map-marked-alt"></i> Peta Lokasi</h4>
+                        <div class="detail-map">
+                            <iframe title="Peta lokasi kos" src="${osmEmbed}" loading="lazy"></iframe>
+                        </div>
+                        <div class="detail-map-actions">
+                            <a href="${escapeHtml(ownerMapsLink)}" target="_blank" class="btn btn-ghost btn-sm">
+                                <i class="fas fa-directions"></i> Buka di Google Maps
+                            </a>
+                            ${!hasCoords ? '<small class="text-muted">Pin perkiraan area — hubungi owner untuk titik persis.</small>' : ''}
+                        </div>
+                    </div>
+
                     ${listing.description ? `
                         <div class="detail-section">
                             <h4><i class="fas fa-align-left"></i> Deskripsi</h4>
@@ -765,16 +904,54 @@ async function showListingDetail(listingId) {
                     </div>
 
                     ${safeOwnerPhone ? `
-                        <a href="${waLink}" target="_blank" class="btn btn-success btn-block" style="margin-top: 20px;">
-                            <i class="fab fa-whatsapp"></i> Hubungi Pemilik via WhatsApp
-                        </a>
+                        <div class="detail-cta-row">
+                            <a href="${waLink}" target="_blank" class="btn btn-success btn-block">
+                                <i class="fab fa-whatsapp"></i> Hubungi Pemilik via WhatsApp
+                            </a>
+                        </div>
+                        <div class="detail-cta-row detail-cta-secondary">
+                            <button class="btn btn-ghost" onclick="toggleFavorite(event, '${escapeHtml(listing.id)}'); closeListingDetailModal();">
+                                <i class="${favActive ? 'fas' : 'far'} fa-heart"></i> ${favActive ? 'Tersimpan di Favorit' : 'Simpan ke Favorit'}
+                            </button>
+                            <button class="btn btn-ghost" onclick="shareListing('${escapeHtml(listing.id)}', '${safeTitle.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-share-alt"></i> Bagikan
+                            </button>
+                        </div>
                     ` : ''}
+
+                    <div class="detail-section" id="reviewsSection">
+                        <h4><i class="fas fa-star"></i> Ulasan Penghuni</h4>
+                        <div id="reviewsList"><div class="loading"><div class="spinner"></div></div></div>
+                        <div class="review-form-wrap">
+                            <h5>Tulis Ulasan</h5>
+                            ${state.token ? `
+                            <form onsubmit="handleReviewSubmit(event, '${escapeHtml(listing.id)}')">
+                                <div class="form-group">
+                                    <label>Rating</label>
+                                    <div class="star-input" id="starInput">
+                                        ${[1, 2, 3, 4, 5].map(n => `<i class="far fa-star" data-value="${n}" onclick="setReviewRating(${n})"></i>`).join('')}
+                                    </div>
+                                    <input type="hidden" id="reviewRating" value="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="reviewComment">Ulasan (kebersihan, keamanan, keramahan owner...)</label>
+                                    <textarea id="reviewComment" rows="3" maxlength="1000" placeholder="Bagikan pengalaman Anda..." style="width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;resize:vertical;"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-paper-plane"></i> Kirim Ulasan
+                                </button>
+                            </form>` : `
+                            <p class="text-muted">Silakan <a href="#" onclick="closeListingDetailModal(); showModal('loginModal'); return false;">masuk</a> untuk menulis ulasan.</p>`}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     `;
 
     document.getElementById('listingDetailContainer').innerHTML = detailHtml;
+    setReviewRating(5);
+    loadListingReviews(listing.id);
 }
 
 function closeListingDetailModal() {
@@ -783,9 +960,95 @@ function closeListingDetailModal() {
     document.body.style.overflow = '';
 }
 
-function filterListings() {
-    const district = document.getElementById('filterDistrict').value;
-    const maxPrice = document.getElementById('filterPrice').value;
+/**
+ * Bagikan kos (Web Share API → fallback salin link)
+ */
+function shareListing(id, title) {
+    const url = `${window.location.origin}/?kos=${id}#cari`;
+    const text = `Lihat kos "${title}" di KosEnde: ${url}`;
+    if (navigator.share) {
+        navigator.share({ title: `KosEnde - ${title}`, text, url }).catch(() => {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('success', 'Disalin!', 'Tautan kos disalin, siap dibagikan ke WhatsApp');
+        }).catch(() => {
+            showToast('info', 'Bagikan', url);
+        });
+    } else {
+        prompt('Salin tautan kos:', url);
+    }
+}
+
+/**
+ * Muat & render ulasan di modal detail
+ */
+async function loadListingReviews(listingId) {
+    const container = document.getElementById('reviewsList');
+    if (!container) return;
+    const result = await api(`/listings/${listingId}/reviews`);
+    if (!result.success) {
+        container.innerHTML = '<p class="text-muted">Gagal memuat ulasan.</p>';
+        return;
+    }
+    const reviews = result.data || [];
+    if (reviews.length === 0) {
+        container.innerHTML = '<p class="text-muted">Belum ada ulasan. Jadilah yang pertama memberi ulasan!</p>';
+        return;
+    }
+    container.innerHTML = reviews.map(r => `
+        <div class="review-item">
+            <div class="review-header">
+                <div class="review-avatar"><i class="fas fa-user"></i></div>
+                <div>
+                    <div class="review-name">${escapeHtml(r.reviewer_name)}</div>
+                    <div class="review-stars">${renderStars(r.rating)} <small>${new Date(r.created_at).toLocaleDateString('id-ID')}</small></div>
+                </div>
+            </div>
+            ${r.comment ? `<p class="review-comment">${escapeHtml(r.comment)}</p>` : ''}
+        </div>
+    `).join('');
+}
+
+function setReviewRating(n) {
+    const hidden = document.getElementById('reviewRating');
+    if (hidden) hidden.value = n;
+    document.querySelectorAll('#starInput i').forEach(star => {
+        const v = parseInt(star.dataset.value, 10);
+        star.className = v <= n ? 'fas fa-star star-filled star-selectable' : 'far fa-star star-selectable';
+    });
+}
+
+async function handleReviewSubmit(e, listingId) {
+    e.preventDefault();
+    const rating = document.getElementById('reviewRating').value;
+    const comment = document.getElementById('reviewComment').value.trim();
+    const reviewerName = state.user ? state.user.name : 'Anonim';
+
+    const result = await api(`/listings/${listingId}/reviews`, {
+        method: 'POST',
+        body: { reviewer_name: reviewerName, rating: parseInt(rating, 10), comment },
+    });
+
+    if (result.success) {
+        showToast('success', 'Terima kasih!', 'Ulasan Anda berhasil dikirim');
+        loadListingReviews(listingId);
+        loadListings(); // refresh agregat rating di kartu
+    } else {
+        showToast('error', 'Gagal', result.message);
+    }
+}
+
+/**
+ * Gabungkan semua filter aktif + query pencarian + favorit
+ */
+function getFilteredListings() {
+    const districtEl = document.getElementById('filterDistrict');
+    const typeEl = document.getElementById('filterType');
+    const priceEl = document.getElementById('filterPrice');
+    const district = districtEl ? districtEl.value : '';
+    const kosType = typeEl ? typeEl.value : '';
+    const maxPrice = priceEl ? priceEl.value : '';
+    const facilities = [...document.querySelectorAll('.filterFacility:checked')].map(c => c.value);
 
     let filtered = state.listings;
 
@@ -793,9 +1056,43 @@ function filterListings() {
         filtered = filtered.filter(l => l.district === district);
     }
 
+    if (kosType) {
+        filtered = filtered.filter(l => (l.kos_type || 'campur') === kosType);
+    }
+
     if (maxPrice) {
         filtered = filtered.filter(l => parseFloat(l.price_monthly) <= parseFloat(maxPrice));
     }
+
+    if (facilities.length > 0) {
+        filtered = filtered.filter(l => {
+            const owned = (l.facilities || []).map(f => String(f).toLowerCase());
+            return facilities.every(sel =>
+                owned.some(f => f.includes(sel.toLowerCase()))
+            );
+        });
+    }
+
+    if (state.showFavoritesOnly) {
+        const favs = getFavorites();
+        filtered = filtered.filter(l => favs.has(String(l.id)));
+    }
+
+    const query = (state.searchQuery || '').toLowerCase().trim();
+    if (query) {
+        filtered = filtered.filter(l =>
+            (l.title || '').toLowerCase().includes(query) ||
+            (l.address || '').toLowerCase().includes(query) ||
+            (l.village && l.village.toLowerCase().includes(query)) ||
+            (l.district && l.district.toLowerCase().includes(query))
+        );
+    }
+
+    return filtered;
+}
+
+function filterListings() {
+    const filtered = getFilteredListings();
 
     const grid = document.getElementById('listingsGrid');
     const empty = document.getElementById('listingsEmpty');
@@ -810,31 +1107,42 @@ function filterListings() {
     }
 }
 
+function resetFilters() {
+    const districtEl = document.getElementById('filterDistrict');
+    const typeEl = document.getElementById('filterType');
+    const priceEl = document.getElementById('filterPrice');
+    if (districtEl) districtEl.value = '';
+    if (typeEl) typeEl.value = '';
+    if (priceEl) priceEl.value = '';
+    document.querySelectorAll('.filterFacility:checked').forEach(c => { c.checked = false; });
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+    state.searchQuery = '';
+    state.showFavoritesOnly = false;
+    document.querySelectorAll('.filter-actions .btn').forEach(b => b.classList.remove('active'));
+    filterListings();
+}
+
+function toggleFavoritesFilter(btn) {
+    state.showFavoritesOnly = !state.showFavoritesOnly;
+    if (btn) {
+        btn.classList.toggle('active', state.showFavoritesOnly);
+        btn.innerHTML = state.showFavoritesOnly
+            ? '<i class="fas fa-heart"></i> Favorit'
+            : '<i class="far fa-heart"></i> Favorit';
+    }
+    if (state.showFavoritesOnly && getFavorites().size === 0) {
+        showToast('info', 'Favorit kosong', 'Ketuk ikon hati pada kos untuk menyimpannya');
+    }
+    filterListings();
+}
+
 function searchListings() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
-    if (!query) {
-        renderListings(state.listings);
-        return;
-    }
-
-    const filtered = state.listings.filter(l =>
-        l.title.toLowerCase().includes(query) ||
-        l.address.toLowerCase().includes(query) ||
-        (l.village && l.village.toLowerCase().includes(query)) ||
-        (l.district && l.district.toLowerCase().includes(query))
-    );
-
-    const grid = document.getElementById('listingsGrid');
-    const empty = document.getElementById('listingsEmpty');
-
-    if (filtered.length === 0) {
-        grid.style.display = 'none';
-        empty.style.display = 'block';
-    } else {
-        grid.style.display = 'grid';
-        empty.style.display = 'none';
-        renderListings(filtered);
-    }
+    const input = document.getElementById('searchInput');
+    state.searchQuery = input ? input.value : '';
+    // Bawa pengguna ke halaman hasil agar tidak bingung (sebelumnya render ke grid tersembunyi)
+    goToListings();
+    filterListings();
 }
 
 // =====================================================
@@ -1258,6 +1566,40 @@ async function editListing(id) {
                             <input type="text" id="editListingFacilities" value="${escapeHtml((listing.facilities || []).join(', '))}" placeholder="Contoh: AC, WiFi, Kamar Mandi Dalam, Parkir">
                         </div>
                     </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="editListingType">Tipe Kos *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-users"></i>
+                                <select id="editListingType" required>
+                                    ${['putra', 'putri', 'campur', 'pasutri'].map(t => `<option value="${t}" ${(listing.kos_type || 'campur') === t ? 'selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editListingMapsUrl">Link Google Maps</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <input type="url" id="editListingMapsUrl" value="${escapeHtml(listing.maps_url || '')}" placeholder="https://maps.google.com/...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="editListingLat">Latitude</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-location-arrow"></i>
+                                <input type="number" step="any" id="editListingLat" value="${listing.latitude || ''}" placeholder="-8.8390">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editListingLng">Longitude</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-location-arrow"></i>
+                                <input type="number" step="any" id="editListingLng" value="${listing.longitude || ''}" placeholder="121.6620">
+                            </div>
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-primary btn-block">
                         <span>Simpan Perubahan</span>
                         <i class="fas fa-check"></i>
@@ -1310,6 +1652,10 @@ async function handleEditListing(e, id) {
     const priceInput = document.getElementById('editListingPrice').value;
     const roomSize = document.getElementById('editListingRoomSize').value.trim();
     const facilitiesInput = document.getElementById('editListingFacilities').value;
+    const kosType = document.getElementById('editListingType').value;
+    const mapsUrl = document.getElementById('editListingMapsUrl').value.trim();
+    const latInput = document.getElementById('editListingLat').value;
+    const lngInput = document.getElementById('editListingLng').value;
 
     if (!title || !locationId || !address || !priceInput) {
         showToast('error', 'Gagal', 'Judul, lokasi, alamat, dan harga wajib diisi');
@@ -1334,6 +1680,10 @@ async function handleEditListing(e, id) {
         address,
         price_monthly: price,
         room_size: roomSize,
+        kos_type: kosType,
+        latitude: latInput ? parseFloat(latInput) : null,
+        longitude: lngInput ? parseFloat(lngInput) : null,
+        maps_url: mapsUrl || null,
         facilities,
     };
 
@@ -1504,6 +1854,44 @@ async function showAddListingModal() {
                             <input type="text" id="listingFacilities" placeholder="Contoh: AC, WiFi, Kamar Mandi Dalam, Parkir">
                         </div>
                     </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="listingType">Tipe Kos *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-users"></i>
+                                <select id="listingType" required>
+                                    <option value="campur">Campur</option>
+                                    <option value="putra">Putra</option>
+                                    <option value="putri">Putri</option>
+                                    <option value="pasutri">Pasutri</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="listingMapsUrl">Link Google Maps <small>(opsional)</small></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <input type="url" id="listingMapsUrl" placeholder="https://maps.google.com/...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="listingLat">Latitude <small>(opsional)</small></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-location-arrow"></i>
+                                <input type="number" step="any" id="listingLat" placeholder="-8.8390">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="listingLng">Longitude <small>(opsional)</small></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-location-arrow"></i>
+                                <input type="number" step="any" id="listingLng" placeholder="121.6620">
+                            </div>
+                        </div>
+                    </div>
+                    <p class="form-hint">💡 Agar kos tampil di peta: buka Google Maps → klik kanan titik kos → klik angka koordinat untuk menyalin, lalu tempel di atas.</p>
                     <div class="form-group">
                         <label>Gambar Kos *</label>
                         <div class="upload-area" id="uploadArea">
@@ -1511,7 +1899,7 @@ async function showAddListingModal() {
                             <div class="upload-placeholder" onclick="document.getElementById('listingImages').click()">
                                 <i class="fas fa-cloud-upload-alt"></i>
                                 <p><strong>Klik untuk upload</strong> atau drag & drop</p>
-                                <span>JPG, PNG, WEBP, GIF (Maks 5MB per file, max 5 file)</span>
+                                <span>JPG, PNG, WEBP, GIF (otomatis dikompresi, max 5 file)</span>
                             </div>
                         </div>
                         <div class="image-preview" id="imagePreview"></div>
@@ -1570,6 +1958,10 @@ async function handleAddListing(e) {
     const depositInput = document.getElementById('listingDeposit').value;
     const roomSize = document.getElementById('listingRoomSize').value.trim();
     const facilitiesInput = document.getElementById('listingFacilities').value;
+    const kosType = document.getElementById('listingType').value;
+    const mapsUrl = document.getElementById('listingMapsUrl').value.trim();
+    const latInput = document.getElementById('listingLat').value;
+    const lngInput = document.getElementById('listingLng').value;
 
     // Validation
     if (!title) {
@@ -1627,6 +2019,10 @@ async function handleAddListing(e) {
         price_monthly: price,
         deposit: deposit,
         room_size: roomSize,
+        kos_type: kosType,
+        latitude: latInput ? parseFloat(latInput) : null,
+        longitude: lngInput ? parseFloat(lngInput) : null,
+        maps_url: mapsUrl || null,
         facilities: facilities,
         images: imageUrls,
     };
@@ -1659,6 +2055,43 @@ async function handleAddListing(e) {
     }
 }
 
+/**
+ * Kompresi gambar di browser (canvas → WebP/JPEG, max 1280px)
+ * agar upload cepat di jaringan seluler & hemat storage server.
+ */
+function compressImage(file, maxDim = 1280, quality = 0.82) {
+    return new Promise((resolve) => {
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            let { width, height } = img;
+            const scale = Math.min(1, maxDim / Math.max(width, height));
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+            // WebP bila didukung, fallback ke JPEG
+            const tryType = canvas.toDataURL('image/webp').startsWith('data:image/webp') ? 'image/webp' : 'image/jpeg';
+            canvas.toBlob((blob) => {
+                if (!blob) return resolve(file);
+                const ext = tryType === 'image/webp' ? 'webp' : 'jpg';
+                const name = file.name.replace(/\.[a-z0-9]+$/i, '') + '.' + ext;
+                resolve(new File([blob], name, { type: tryType }));
+            }, tryType, quality);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(file);
+        };
+        img.src = objectUrl;
+    });
+}
+
 async function handleImageUpload(input) {
     const files = input.files;
     if (!files || files.length === 0) return;
@@ -1670,14 +2103,9 @@ async function handleImageUpload(input) {
         return;
     }
 
-    // Validate file size and type
+    // Validate type dulu (ukuran dicek ulang setelah kompresi)
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     for (let file of files) {
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('error', 'Gagal', `File ${file.name} terlalu besar (maks 5MB)`);
-            input.value = '';
-            return;
-        }
         if (!allowedTypes.includes(file.type)) {
             showToast('error', 'Gagal', `Format ${file.name} tidak didukung`);
             input.value = '';
@@ -1687,11 +2115,24 @@ async function handleImageUpload(input) {
 
     // Show preview
     const previewContainer = document.getElementById('imagePreview');
-    previewContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Mengupload...</p></div>';
+    previewContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Mengompresi & mengupload...</p></div>';
+
+    // Kompresi tiap gambar sebelum upload
+    const compressed = [];
+    for (let file of files) {
+        const out = file.type === 'image/gif' ? file : await compressImage(file);
+        if (out.size > 2 * 1024 * 1024) {
+            previewContainer.innerHTML = '';
+            showToast('error', 'Gagal', `File ${file.name} masih > 2MB setelah kompresi. Coba foto lain.`);
+            input.value = '';
+            return;
+        }
+        compressed.push(out);
+    }
 
     // Create FormData
     const formData = new FormData();
-    for (let file of files) {
+    for (let file of compressed) {
         formData.append('images', file);
     }
 
@@ -1922,6 +2363,10 @@ async function loadSubscription() {
                                     <p>a.n. <strong>Oktavianus Avilaryl Nggai Dae</strong></p>
                                 </div>
                                 <p style="margin-bottom: 12px; color: var(--gray-600);">Harga langganan: <strong>Rp 50.000 / bulan</strong></p>
+                                <a class="btn btn-success btn-sm" target="_blank" id="waConfirmBtn"
+                                   href="https://wa.me/6282359282149?text=${encodeURIComponent('Halo Admin KosEnde, saya sudah transfer perpanjangan langganan Rp 50.000. Nama: ' + (state.user ? state.user.name : '') + ', Email: ' + (state.user ? state.user.email : ''))}">
+                                    <i class="fab fa-whatsapp"></i> Konfirmasi via WhatsApp (lebih cepat)
+                                </a>
                             </div>
 
                             <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
@@ -2004,7 +2449,7 @@ async function handlePaymentSubmit(e) {
     });
 
     if (result.success) {
-        showToast('success', 'Berhasil!', 'Pembayaran berhasil dikirim. Menunggu verifikasi admin.');
+        showToast('success', 'Berhasil!', 'Pembayaran dikirim. Klik "Konfirmasi via WhatsApp" agar verifikasi admin lebih cepat.');
         loadSubscription();
     } else {
         showToast('error', 'Gagal', result.message);
@@ -2408,6 +2853,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.goToDashboard = goToDashboard;
     window.searchListings = searchListings;
     window.filterListings = filterListings;
+    window.resetFilters = resetFilters;
+    window.toggleFavoritesFilter = toggleFavoritesFilter;
+    window.toggleFavorite = toggleFavorite;
+    window.renderFeatured = renderFeatured;
+    window.showListingDetail = showListingDetail;
+    window.closeListingDetailModal = closeListingDetailModal;
+    window.shareListing = shareListing;
+    window.setReviewRating = setReviewRating;
+    window.handleReviewSubmit = handleReviewSubmit;
+    window.handleLogout = logout;
     window.adminDeleteUser = adminDeleteUser;
 });
 

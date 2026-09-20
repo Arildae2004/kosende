@@ -226,6 +226,9 @@ class ListingController {
                 district: req.query.district,
                 min_price: req.query.min_price,
                 max_price: req.query.max_price,
+                kos_type: req.query.kos_type,
+                facility: req.query.facility,
+                search: req.query.search,
             };
 
             const listings = await listingService.getActiveListings(filters);

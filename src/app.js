@@ -20,7 +20,9 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'"],
             scriptSrcAttr: ["'self'", "'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
             imgSrc: ["'self'", "data:", "https:"],
+            frameSrc: ["'self'", "https:"], // OpenStreetMap / Google Maps embed di detail kos
             connectSrc: ["'self'"],
+            frameAncestors: ["'self'"],
         },
     },
     crossOriginEmbedderPolicy: false,

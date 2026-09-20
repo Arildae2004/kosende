@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const listingController = require('../controllers/listingController');
+const reviewController = require('../controllers/reviewController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { checkSubscription } = require('../middleware/subscriptionCheck');
 const { validateLocation } = require('../middleware/validateLocation');
@@ -36,6 +37,15 @@ router.get(
     authenticate,
     authorize('owner'),
     listingController.getMyListings
+);
+
+router.get('/:id/reviews', reviewController.getReviews);
+
+router.post(
+    '/:id/reviews',
+    authenticate,
+    authorize('viewer', 'owner', 'admin'),
+    reviewController.createReview
 );
 
 router.get('/:id', listingController.getListingById);

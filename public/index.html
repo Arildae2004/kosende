@@ -4,11 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KosEnde - Platform Kos Terbaik di Ende NTT</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+    <meta name="description" content="KosEnde — platform terpercaya untuk mencari kos putra, putri, campur & pasutri di Ende, NTT. Dekat Universitas Flores, pusat kota, dan perkantoran.">
+    <meta name="keywords" content="kos ende, kosan ende, kos putri ende, kos putra ende, kontrakan ende, universitas flores, NTT">
+    <meta name="author" content="KosEnde">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="canonical" href="https://kosende-production.up.railway.app/">
+    <!-- Open Graph / WhatsApp / Social preview -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="KosEnde">
+    <meta property="og:title" content="KosEnde - Platform Kos Terbaik di Ende NTT">
+    <meta property="og:description" content="Temukan kos putra, putri, campur & pasutri di Ende, NTT. Terverifikasi, harga transparan, hubungi owner via WhatsApp.">
+    <meta property="og:image" content="https://kosende-production.up.railway.app/og-cover.svg">
+    <meta property="og:url" content="https://kosende-production.up.railway.app/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="KosEnde - Platform Kos Terbaik di Ende NTT">
+    <meta name="twitter:description" content="Temukan kos nyaman, aman, dan terjangkau di Kota Ende, NTT.">
+    <meta name="twitter:image" content="https://kosende-production.up.railway.app/og-cover.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="apple-touch-icon" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=5">
+    <link rel="stylesheet" href="css/style.css?v=6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -78,6 +95,25 @@
                     </div>
                 </section>
 
+                <!-- Featured Listings (preview, mengatasi kesan kosong) -->
+                <section class="featured" id="featuredSection">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-badge">Rekomendasi</span>
+                            <h2 class="section-title">Kos Pilihan di Ende</h2>
+                            <p class="section-subtitle">Listing terverifikasi yang baru ditambahkan</p>
+                        </div>
+                        <div class="listings-grid" id="featuredGrid">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 28px;">
+                            <button class="btn btn-primary" onclick="goToListings()">
+                                Lihat Semua Kos <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- CTA Section -->
                 <section class="cta" id="ctaSection">
                     <div class="container">
@@ -121,6 +157,16 @@
                                 </select>
                             </div>
                             <div class="filter-group">
+                                <label>Tipe Kos:</label>
+                                <select id="filterType" onchange="filterListings()">
+                                    <option value="">Semua Tipe</option>
+                                    <option value="putra">Putra</option>
+                                    <option value="putri">Putri</option>
+                                    <option value="campur">Campur</option>
+                                    <option value="pasutri">Pasutri</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
                                 <label>Harga Max:</label>
                                 <select id="filterPrice" onchange="filterListings()">
                                     <option value="">Semua Harga</option>
@@ -129,6 +175,23 @@
                                     <option value="1000000">Rp 1.000.000</option>
                                     <option value="1500000">Rp 1.500.000</option>
                                 </select>
+                            </div>
+                            <div class="filter-group filter-facilities">
+                                <label>Fasilitas:</label>
+                                <div class="facility-checkboxes">
+                                    <label><input type="checkbox" class="filterFacility" value="AC" onchange="filterListings()"> AC</label>
+                                    <label><input type="checkbox" class="filterFacility" value="WiFi" onchange="filterListings()"> WiFi</label>
+                                    <label><input type="checkbox" class="filterFacility" value="Kamar Mandi Dalam" onchange="filterListings()"> KM Dalam</label>
+                                    <label><input type="checkbox" class="filterFacility" value="Parkir" onchange="filterListings()"> Parkir</label>
+                                </div>
+                            </div>
+                            <div class="filter-group filter-actions">
+                                <button class="btn btn-ghost btn-sm" onclick="toggleFavoritesFilter(this)" title="Tampilkan kos favorit saya">
+                                    <i class="far fa-heart"></i> Favorit
+                                </button>
+                                <button class="btn btn-ghost btn-sm" onclick="resetFilters()" title="Reset semua filter">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
                             </div>
                         </div>
                         <div class="listings-grid" id="listingsGrid">
@@ -455,11 +518,13 @@
                         </li>
                         <li><strong>Tunggu Verifikasi</strong> - Admin akan mengecek dan mengapprove listing Anda dalam 1x24 jam</li>
                         <li><strong>Kelola Listing</strong> - Setelah diapprove, listing Anda bisa dilihat pencari kos</li>
-                        <li><strong>Perpanjang Langganan</strong> - Jika trial 12 hari habis, lakukan pembayaran Rp 50.000/bulan ke:
+                        <li><strong>Perpanjang Langganan</strong> - Jika trial 14 hari habis, lakukan pembayaran Rp 50.000/bulan ke:
                             <ul>
                                 <li><strong>Bank BNI: 1886420281</strong></li>
                                 <li><strong>a.n. Oktavianus Avilaryl Nggai Dae</strong></li>
                             </ul>
+                            Setelah transfer, isi form pembayaran di menu <strong>Langganan</strong> lalu klik tombol
+                            <strong>Konfirmasi via WhatsApp</strong> agar admin bisa verifikasi lebih cepat (tanpa kirim bukti manual).
                         </li>
                     </ol>
                 </div>
@@ -471,7 +536,9 @@
                         <li><strong>Filter Pencarian</strong> - Gunakan filter berdasarkan:
                             <ul>
                                 <li>Kecamatan (Ende, Ende Selatan, Ende Tengah, dll)</li>
+                                <li>Tipe kos (Putra / Putri / Campur / Pasutri)</li>
                                 <li>Harga maksimal (Rp 500.000 - Rp 1.500.000)</li>
+                                <li>Fasilitas kunci (AC, WiFi, Kamar Mandi Dalam, Parkir)</li>
                             </ul>
                         </li>
                         <li><strong>Lihat Detail</strong> - Klik card kos untuk melihat detail lengkap:
@@ -511,6 +578,6 @@
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/app.js?v=5"></script>
+    <script src="js/app.js?v=6"></script>
 </body>
 </html>

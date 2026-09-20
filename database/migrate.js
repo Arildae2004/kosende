@@ -4,29 +4,40 @@ const db = require('../src/config/database');
 
 /**
  * Run database migration
- * Execute schema.sql to create all tables and relations
+ * - schema.sql untuk install baru (toleran jika tabel sudah ada)
+ * - migration-002.sql untuk kolom tipe kos, koordinat & reviews (idempotent)
  */
 async function migrate() {
     try {
         console.log('🔄 Starting database migration...');
 
-        const schemaPath = path.join(__dirname, 'schema.sql');
-        const schema = fs.readFileSync(schemaPath, 'utf8');
+        const runFile = async (file) => {
+            const filePath = path.join(__dirname, file);
+            if (!fs.existsSync(filePath)) {
+                console.log(`⏭️  Skipping ${file} (not found)`);
+                return;
+            }
+            const sql = fs.readFileSync(filePath, 'utf8');
+            try {
+                await db.query(sql);
+                console.log(`✅ ${file} applied`);
+            } catch (err) {
+                // Toleran untuk objek yang sudah ada (rerun di Railway/Render)
+                const ignorable = ['already exists', 'duplicate key'];
+                if (ignorable.some((m) => err.message.includes(m))) {
+                    console.log(`⏭️  ${file}: sebagian objek sudah ada, dilanjutkan`);
+                } else {
+                    throw err;
+                }
+            }
+        };
 
-        // Execute the schema
-        await db.query(schema);
+        await runFile('schema.sql');
+        await runFile('migration-002.sql');
 
         console.log('✅ Migration completed successfully!');
-        console.log('📊 Tables created:');
-        console.log('   - users');
-        console.log('   - subscriptions');
-        console.log('   - payments');
-        console.log('   - locations');
-        console.log('   - listings');
-        console.log('   - activity_logs');
-        console.log('📈 Views created:');
-        console.log('   - v_active_listings');
-        console.log('   - v_subscription_overview');
+        console.log('📊 Tables: users, subscriptions, payments, locations, listings, reviews, activity_logs');
+        console.log('📈 Views: v_active_listings, v_subscription_overview');
 
         process.exit(0);
     } catch (error) {
