@@ -582,15 +582,9 @@ async function loadListings() {
         document.getElementById('totalListings').textContent = result.data.length;
 
         renderFeatured();
-
-        if (result.data.length === 0) {
-            grid.style.display = 'none';
-            empty.style.display = 'block';
-        } else {
-            grid.style.display = 'grid';
-            empty.style.display = 'none';
-            renderListings(result.data);
-        }
+        // Terapkan filter aktif + query pencarian (mencegah hasil pencarian
+        // tertimpa full-list saat fetch selesai — race condition)
+        filterListings();
     }
 }
 
@@ -1096,6 +1090,14 @@ function filterListings() {
 
     const grid = document.getElementById('listingsGrid');
     const empty = document.getElementById('listingsEmpty');
+    const count = document.getElementById('resultsCount');
+    if (!grid || !empty) return;
+
+    if (count) {
+        count.textContent = filtered.length > 0
+            ? `Menampilkan ${filtered.length} kos`
+            : '';
+    }
 
     if (filtered.length === 0) {
         grid.style.display = 'none';
@@ -1140,9 +1142,8 @@ function toggleFavoritesFilter(btn) {
 function searchListings() {
     const input = document.getElementById('searchInput');
     state.searchQuery = input ? input.value : '';
-    // Bawa pengguna ke halaman hasil agar tidak bingung (sebelumnya render ke grid tersembunyi)
+    // Pindah ke halaman hasil; filter diterapkan otomatis saat fetch selesai
     goToListings();
-    filterListings();
 }
 
 // =====================================================
@@ -2344,7 +2345,7 @@ async function loadSubscription() {
                                         <div class="subscription-label">Hari Tersisa</div>
                                     </div>
                                     ${subscription.status !== 'active' ? `
-                                        <button class="btn btn-white" onclick="showPaymentModal()">
+                                        <button class="btn btn-white" onclick="document.getElementById('paymentForm').scrollIntoView({behavior:'smooth', block:'center'})">
                                             <i class="fas fa-credit-card"></i> Perpanjang
                                         </button>
                                     ` : ''}
@@ -2394,6 +2395,15 @@ async function loadSubscription() {
                                         <input type="text" id="paymentNotes" placeholder="Contoh: Pembayaran 1 bulan">
                                     </div>
                                 </div>
+                                <div class="form-group">
+                                    <label for="paymentProof">Bukti Transfer <small>(foto/screenshot, opsional tapi mempercepat verifikasi)</small></label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-receipt"></i>
+                                        <input type="file" id="paymentProof" accept="image/*" onchange="handleProofUpload(this)" style="padding:10px 16px 10px 44px;">
+                                    </div>
+                                    <div class="image-preview" id="proofPreview"></div>
+                                    <input type="hidden" id="paymentProofUrl" value="">
+                                </div>
                                 <button type="submit" class="btn btn-primary btn-block">
                                     <span>Kirim Bukti Pembayaran</span>
                                     <i class="fas fa-arrow-right"></i>
@@ -2437,10 +2447,12 @@ async function loadSubscription() {
 async function handlePaymentSubmit(e) {
     e.preventDefault();
 
+    const proofInput = document.getElementById('paymentProofUrl');
     const paymentData = {
         amount: parseFloat(document.getElementById('paymentAmount').value),
         payment_method: document.getElementById('paymentMethod').value,
         notes: document.getElementById('paymentNotes').value,
+        proof_url: proofInput ? proofInput.value : null,
     };
 
     const result = await api('/subscriptions/payment', {
@@ -2453,6 +2465,58 @@ async function handlePaymentSubmit(e) {
         loadSubscription();
     } else {
         showToast('error', 'Gagal', result.message);
+    }
+}
+
+/**
+ * Upload bukti transfer (dikompresi dulu, reuse endpoint /upload khusus owner)
+ */
+async function handleProofUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        showToast('error', 'Gagal', 'Format file tidak didukung. Gunakan foto/screenshot (JPG/PNG/WEBP).');
+        input.value = '';
+        return;
+    }
+
+    const preview = document.getElementById('proofPreview');
+    preview.innerHTML = '<div class="loading"><div class="spinner"></div><p>Mengompresi & mengupload...</p></div>';
+
+    const compressed = file.type === 'image/gif' ? file : await compressImage(file, 1024, 0.8);
+    if (compressed.size > 2 * 1024 * 1024) {
+        preview.innerHTML = '';
+        showToast('error', 'Gagal', 'File masih > 2MB setelah kompresi. Coba foto lain.');
+        input.value = '';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('images', compressed);
+
+    try {
+        const response = await fetch(`${API_BASE}/listings/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${state.token}` },
+            body: formData,
+        });
+        const result = await response.json();
+        if (result.success && result.data.images.length > 0) {
+            document.getElementById('paymentProofUrl').value = result.data.images[0];
+            preview.innerHTML = `
+                <div class="preview-item">
+                    <img src="${escapeHtml(result.data.images[0])}" alt="Bukti transfer">
+                </div>`;
+            showToast('success', 'Terupload!', 'Bukti transfer siap dikirim bersama form.');
+        } else {
+            preview.innerHTML = '';
+            showToast('error', 'Gagal', result.message || 'Gagal mengupload bukti');
+        }
+    } catch (error) {
+        preview.innerHTML = '';
+        showToast('error', 'Gagal', 'Gagal mengupload bukti transfer');
     }
 }
 
@@ -2608,7 +2672,7 @@ async function loadPendingPayments() {
                                                 <td>Rp ${formatNumber(p.amount)}</td>
                                                 <td>${escapeHtml(p.payment_method)}</td>
                                                 <td>${new Date(p.created_at).toLocaleDateString('id-ID')}</td>
-                                                <td>${escapeHtml(p.notes || '-')}</td>
+                                                <td>${escapeHtml(p.notes || '-')}${p.proof_url ? `<br><a href="${escapeHtml(p.proof_url)}" target="_blank" style="color:var(--primary-500);font-weight:600;"><i class="fas fa-receipt"></i> Lihat bukti</a>` : ''}</td>
                                                 <td>
                                                     <div class="action-buttons">
                                                         <button class="action-btn view" title="Verifikasi" onclick="verifyPayment('${escapeHtml(p.id)}')"><i class="fas fa-check"></i></button>
@@ -2862,6 +2926,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.shareListing = shareListing;
     window.setReviewRating = setReviewRating;
     window.handleReviewSubmit = handleReviewSubmit;
+    window.handleProofUpload = handleProofUpload;
+    window.handlePaymentSubmit = handlePaymentSubmit;
     window.handleLogout = logout;
     window.adminDeleteUser = adminDeleteUser;
 });

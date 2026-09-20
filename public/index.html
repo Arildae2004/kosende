@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6">
+    <link rel="stylesheet" href="css/style.css?v=7">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -174,6 +174,9 @@
                                     <option value="750000">Rp 750.000</option>
                                     <option value="1000000">Rp 1.000.000</option>
                                     <option value="1500000">Rp 1.500.000</option>
+                                    <option value="2000000">Rp 2.000.000</option>
+                                    <option value="3000000">Rp 3.000.000</option>
+                                    <option value="5000000">Rp 5.000.000</option>
                                 </select>
                             </div>
                             <div class="filter-group filter-facilities">
@@ -197,6 +200,7 @@
                         <div class="listings-grid" id="listingsGrid">
                             <!-- Listings will be loaded here -->
                         </div>
+                        <p class="results-count" id="resultsCount"></p>
                         <div class="listings-empty" id="listingsEmpty" style="display: none;">
                             <i class="fas fa-search"></i>
                             <h3>Tidak ada kos ditemukan</h3>
@@ -341,6 +345,8 @@
                         <li><a href="#">Beranda</a></li>
                         <li><a href="#">Cari Kos</a></li>
                         <li><a href="#">Tentang Kami</a></li>
+                        <li><a href="#" onclick="showModal('privacyModal'); return false;">Kebijakan Privasi</a></li>
+                        <li><a href="#" onclick="showModal('termsModal'); return false;">Syarat & Ketentuan</a></li>
                     </ul>
                 </div>
                 <div class="footer-links">
@@ -523,8 +529,8 @@
                                 <li><strong>Bank BNI: 1886420281</strong></li>
                                 <li><strong>a.n. Oktavianus Avilaryl Nggai Dae</strong></li>
                             </ul>
-                            Setelah transfer, isi form pembayaran di menu <strong>Langganan</strong> lalu klik tombol
-                            <strong>Konfirmasi via WhatsApp</strong> agar admin bisa verifikasi lebih cepat (tanpa kirim bukti manual).
+                            Setelah transfer, isi form pembayaran di menu <strong>Langganan</strong> (lampirkan foto bukti transfer agar verifikasi lebih cepat), lalu klik tombol
+                            <strong>Konfirmasi via WhatsApp</strong> agar admin bisa verifikasi tanpa konfirmasi manual berulang.
                         </li>
                     </ol>
                 </div>
@@ -575,9 +581,97 @@
         </div>
     </div>
 
+    <!-- Privacy Policy Modal -->
+    <div class="modal" id="privacyModal">
+        <div class="modal-overlay" onclick="closeModal('privacyModal')"></div>
+        <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close" onclick="closeModal('privacyModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h2>Kebijakan Privasi</h2>
+                <p>Terakhir diperbarui: September 2026</p>
+            </div>
+            <div class="panduan-content">
+                <div class="panduan-section">
+                    <h3><i class="fas fa-database"></i> Data yang Kami Kumpulkan</h3>
+                    <ul class="panduan-list">
+                        <li><strong>Data akun:</strong> nama lengkap, alamat email, nomor telepon, dan password (disimpan dalam bentuk hash bcrypt, tidak pernah disimpan plain-text).</li>
+                        <li><strong>Data listing:</strong> informasi kos yang Anda daftarkan (judul, alamat, harga, foto, koordinat lokasi).</li>
+                        <li><strong>Data pembayaran:</strong> jumlah, metode, dan bukti transfer langganan owner.</li>
+                        <li><strong>Data teknis:</strong> log akses standar server untuk keamanan dan diagnostik.</li>
+                    </ul>
+                </div>
+                <div class="panduan-section">
+                    <h3><i class="fas fa-cogs"></i> Penggunaan Data</h3>
+                    <ul class="panduan-list">
+                        <li>Menyediakan dan mengoperasikan layanan pencarian kos.</li>
+                        <li>Menampilkan informasi kontak owner (nama & nomor WhatsApp) kepada pencari kos agar transaksi dapat terjadi langsung.</li>
+                        <li>Verifikasi listing dan pembayaran oleh admin.</li>
+                        <li>Kami <strong>tidak menjual</strong> data pribadi Anda kepada pihak ketiga.</li>
+                    </ul>
+                </div>
+                <div class="panduan-section">
+                    <h3><i class="fas fa-lock"></i> Keamanan & Hak Anda</h3>
+                    <ul class="panduan-list">
+                        <li>Akses akun dilindungi password ter-hash dan token JWT.</li>
+                        <li>Anda berhak meminta perbaikan atau penghapusan data akun dengan menghubungi <strong>infokosende@gmail.com</strong> / WhatsApp <strong>082359282149</strong>.</li>
+                        <li>Foto dan nomor telepon yang Anda publikasikan pada listing bersifat publik dan dapat dilihat pengunjung.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div class="modal" id="termsModal">
+        <div class="modal-overlay" onclick="closeModal('termsModal')"></div>
+        <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close" onclick="closeModal('termsModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-file-contract"></i>
+                </div>
+                <h2>Syarat & Ketentuan</h2>
+                <p>Terakhir diperbarui: September 2026</p>
+            </div>
+            <div class="panduan-content">
+                <div class="panduan-section">
+                    <h3><i class="fas fa-user-tie"></i> Untuk Pemilik Kos (Owner)</h3>
+                    <ol class="panduan-list">
+                        <li>Listing wajib berlokasi di wilayah Ende, NTT dengan informasi yang benar dan foto asli.</li>
+                        <li>Setiap listing diverifikasi admin (maks. 1x24 jam) sebelum tampil publik.</li>
+                        <li>Akun baru mendapat masa trial 14 hari. Setelah itu langganan <strong>Rp 50.000/bulan</strong> agar listing tetap aktif.</li>
+                        <li>Dilarang mempublikasikan konten yang melanggar hukum, menipu, atau merugikan pihak lain. Pelanggaran berakibat penolakan/penghapusan listing.</li>
+                    </ol>
+                </div>
+                <div class="panduan-section">
+                    <h3><i class="fas fa-search"></i> Untuk Pencari Kos (Viewer)</h3>
+                    <ol class="panduan-list">
+                        <li>KosEnde adalah platform perantara; kesepakatan sewa terjadi langsung antara pencari dan pemilik kos via WhatsApp.</li>
+                        <li>KosEnde tidak bertanggung jawab atas isi kesepakatan, pembayaran sewa, maupun sengketa antara kedua belah pihak.</li>
+                        <li>Selalu verifikasi kondisi kos secara langsung sebelum membayar.</li>
+                    </ol>
+                </div>
+                <div class="panduan-section">
+                    <h3><i class="fas fa-gavel"></i> Umum</h3>
+                    <ul class="panduan-list">
+                        <li>KosEnde dapat mengubah layanan dan ketentuan ini sewaktu-waktu dengan pemberitahuan di platform.</li>
+                        <li>Kontak resmi: <strong>infokosende@gmail.com</strong> / WhatsApp <strong>082359282149</strong>, Ende, NTT.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/app.js?v=6"></script>
+    <script src="js/app.js?v=7"></script>
 </body>
 </html>

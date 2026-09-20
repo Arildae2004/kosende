@@ -3208,3 +3208,16 @@ input, select, textarea {
     .detail-cta-secondary { flex-direction: column; }
     .featured { padding: 40px 0 4px; }
 }
+
+.results-count {
+    text-align: center;
+    color: var(--gray-500, #64748b);
+    font-size: 0.9rem;
+    margin: 4px 0 18px;
+}
+
+.preview-item img {
+    max-width: 160px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
