@@ -2080,17 +2080,114 @@ input, select, textarea {
     .about-grid,
     .contact-grid {
         grid-template-columns: 1fr;
-        gap: 24px;
+        gap: 16px;
+    }
+
+    .about-info,
+    .contact-section {
+        padding: 48px 0;
+    }
+
+    .contact-grid {
+        margin-top: 28px;
+    }
+
+    /* Kartu fitur jadi horizontal di HP: ikon kiri, teks rata kiri — lebih lega & mudah dibaca */
+    .feature-card {
+        display: flex;
+        gap: 14px;
+        text-align: left;
+        padding: 18px;
+        align-items: flex-start;
+    }
+
+    .feature-card .feature-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        margin: 0;
+        border-radius: 14px;
+    }
+
+    .feature-card .feature-icon i {
+        font-size: 1.15rem;
+    }
+
+    .feature-card h3 {
+        font-size: 0.98rem;
+        margin-bottom: 6px;
+    }
+
+    .feature-card p {
+        font-size: 0.86rem;
+        line-height: 1.6;
+    }
+
+    .section-header {
+        margin-bottom: 32px;
+    }
+
+    .section-badge {
+        font-size: 0.75rem;
+        padding: 6px 14px;
+    }
+
+    .about-card {
+        padding: 24px 20px;
+    }
+
+    .about-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .about-card p {
+        font-size: 0.9rem;
+    }
+
+    .about-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 16px;
+    }
+
+    .contact-item {
+        padding: 24px 20px;
+    }
+
+    .contact-item i {
+        font-size: 1.75rem;
+        margin-bottom: 12px;
+    }
+
+    .contact-item h4 {
+        font-size: 1.05rem;
+    }
+
+    .contact-item p {
+        font-size: 0.9rem;
     }
 
     .listings-page-header,
     .about-page-header {
-        padding: 50px 0 30px;
+        padding: 44px 0 30px;
     }
 
     .listings-page-header h1,
     .about-page-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
+        line-height: 1.35;
+        text-wrap: balance;
+    }
+
+    .listings-page-header h1 i,
+    .about-page-header h1 i {
+        margin-right: 8px;
+    }
+
+    .listings-page-header p,
+    .about-page-header p {
+        font-size: 0.92rem;
+        padding: 0 8px;
     }
 
     .about-card,
@@ -2295,32 +2392,30 @@ input, select, textarea {
     }
 
     .section-title {
-        font-size: 1.4rem;
+        font-size: 1.35rem;
+        line-height: 1.35;
     }
 
     .section-subtitle {
-        font-size: 0.85rem;
+        font-size: 0.88rem;
     }
 
     .feature-card {
-        padding: 20px 16px;
-    }
-
-    .feature-icon {
-        width: 48px;
-        height: 48px;
-    }
-
-    .feature-icon i {
-        font-size: 1.2rem;
+        padding: 16px;
+        gap: 12px;
     }
 
     .feature-card h3 {
-        font-size: 1rem;
+        font-size: 0.92rem;
     }
 
     .feature-card p {
-        font-size: 0.8rem;
+        font-size: 0.83rem;
+    }
+
+    .about-info,
+    .contact-section {
+        padding: 36px 0;
     }
 
     .cta-content h2 {
