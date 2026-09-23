@@ -91,6 +91,8 @@
 
 html {
     scroll-behavior: smooth;
+    overflow-x: clip;
+    max-width: 100%;
 }
 
 body {
@@ -101,7 +103,16 @@ body {
     background-color: #ffffff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100%;
+    overscroll-behavior-x: none;
+}
+
+/* Cegah double-tap-zoom Chrome membajak tap di tombol/link (khusus Chrome HP):
+   tap langsung jadi klik, pinch-zoom tetap bisa */
+button, a, .mobile-toggle, .mobile-menu-link {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 a {
@@ -1643,21 +1654,26 @@ input, select, textarea {
 .mobile-menu {
     position: fixed;
     top: 0;
-    right: -300px;
-    width: 260px;
+    right: 0;
+    width: min(280px, 82vw);
     height: 100vh;
     height: 100dvh;
     background: white;
     z-index: 1501;
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Pakai transform (bukan right negatif) agar menu tersembunyi
+       tidak ikut melebarkan layout viewport di Chrome HP */
+    transform: translateX(105%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     -webkit-overflow-scrolling: touch;
+    visibility: hidden;
 }
 
 .mobile-menu.active {
-    right: 0;
+    transform: translateX(0);
+    visibility: visible;
 }
 
 .mobile-menu-header {
@@ -1800,10 +1816,16 @@ input, select, textarea {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 44px;
-        height: 44px;
+        /* Target sentuh 48px sesuai anjuran aksesibilitas mobile */
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
+        margin-right: -8px;
         border-radius: var(--radius-md);
         transition: all var(--transition-fast);
+        position: relative;
+        z-index: 1001;
     }
 
     .mobile-toggle:hover {
