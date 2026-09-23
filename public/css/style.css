@@ -3396,7 +3396,6 @@ input, select, textarea {
     .listings-filter { max-height: none; }
     .facility-checkboxes { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
     .filter-group { min-width: 0; }
-    .detail-cta-row .btn-block { position: sticky; bottom: 10px; z-index: 5; box-shadow: 0 8px 24px rgba(37,99,235,.25); }
     .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .data-table { min-width: 640px; }
     .sidebar-menu { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; }
@@ -3404,4 +3403,90 @@ input, select, textarea {
     .availability-form input[type="date"], .availability-form .btn { width: 100%; }
     .listing-footer { flex-direction: column; gap: 10px; align-items: stretch; }
     .listing-contact .btn { width: 100%; justify-content: center; }
+}
+
+/* =====================================================
+   TOMBOL MOBILE — target sentuh besar, penuh, berjenjang
+   ===================================================== */
+/* Efek tekan di layar sentuh (hover tidak ada di HP) */
+.btn:active { transform: scale(0.97); }
+.btn-sm { min-height: 40px; padding: 9px 16px; font-size: 0.85rem; }
+
+@media (max-width: 768px) {
+    /* Semua tombol: tinggi 48px, sudut 14px, teks tegas */
+    .btn {
+        min-height: 48px;
+        padding: 13px 22px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        border-radius: 14px;
+        letter-spacing: 0.01em;
+    }
+
+    .btn-sm {
+        min-height: 44px;
+        padding: 11px 18px;
+        font-size: 0.86rem;
+    }
+
+    /* Tombol utama selalu penuh & paling menonjol */
+    .btn-primary, .btn-success, .btn-danger, .btn-google {
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28);
+    }
+    .btn-success { box-shadow: 0 6px 20px rgba(16, 185, 129, 0.32); }
+    .btn-danger { box-shadow: 0 6px 20px rgba(244, 63, 94, 0.3); }
+
+    /* Hero: tombol Cari penuh, tinggi, ikon jelas */
+    .search-box .btn {
+        min-height: 52px;
+        font-size: 1rem;
+        border-radius: 12px;
+    }
+
+    /* CTA "Daftarkan Kos" di beranda penuh */
+    .cta-content .btn { width: 100%; min-height: 52px; font-size: 1rem; }
+
+    /* Filter Favorit / Reset: berdampingan sama besar */
+    .filter-actions { width: 100%; gap: 10px; }
+    .filter-actions .btn { flex: 1; justify-content: center; min-height: 48px; }
+
+    /* Dropdown filter setinggi tombol */
+    .filter-group select { min-height: 48px; border-radius: 12px; }
+
+    /* Kartu kos: tombol Hubungi WA penuh & tebal */
+    .listing-contact .btn { min-height: 50px; font-size: 0.95rem; border-radius: 13px; }
+    .listing-contact { width: 100%; }
+
+    /* Tombol hati di foto lebih mudah disentuh */
+    .fav-btn { width: 42px; height: 42px; font-size: 1.1rem; }
+
+    /* Modal detail: Hubungi + Tanya WA + Favorit/Bagikan penuh bertumpuk */
+    .detail-cta-row { display: flex; flex-direction: column; gap: 10px; }
+    .detail-cta-row .btn,
+    .detail-cta-row .btn-block { width: 100%; min-height: 50px; font-size: 0.95rem; }
+    .detail-cta-secondary { flex-direction: column; }
+    .detail-cta-secondary .btn { width: 100%; }
+
+    /* Form ketersediaan: input + tombol penuh */
+    .availability-form input[type="date"] { min-height: 50px; font-size: 0.95rem; }
+    .availability-form .btn { min-height: 50px; font-size: 0.95rem; }
+
+    /* Modal auth/form: tombol submit penuh tinggi */
+    .modal-content .btn-block { min-height: 50px; font-size: 0.95rem; }
+
+    /* Menu samping HP: link & tombol lega */
+    .mobile-menu-link { min-height: 50px; font-size: 1rem; }
+    .mobile-menu-actions .btn { min-height: 50px; font-size: 0.95rem; }
+
+    /* Empty state: tombol seimbang */
+    .empty-actions .btn { flex: 1; min-width: 150px; justify-content: center; }
+
+    /* Chip saran & fasilitas gampang disentuh */
+    .sugg-chip, .facility-chips .chip { min-height: 40px; display: inline-flex; align-items: center; }
+
+    /* Tombol aksi dashboard lebih besar */
+    .action-btn { width: 40px; height: 40px; font-size: 0.95rem; }
+
+    /* Tombol tutup modal tetap di tempat */
+    .modal-close { min-width: 40px; }
 }
