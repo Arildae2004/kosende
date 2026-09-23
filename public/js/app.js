@@ -23,6 +23,14 @@ const KOS_TYPE_LABELS = {
     pasutri: 'Pasutri',
 };
 
+// Fasilitas standar untuk filter cepat & saran owner (sinkron dengan seed)
+const STANDARD_FACILITIES = [
+    'WiFi', 'AC', 'Kamar Mandi Dalam', 'Kamar Mandi Luar',
+    'Parkir Motor', 'Parkir Mobil', 'Dapur Bersama', 'Dapur Pribadi',
+    'Air PAM', 'Air Sumur', 'Listrik Token', 'Listrik Inklusi',
+    'CCTV', 'Laundry', 'Water Heater', 'Balkon',
+];
+
 // =====================================================
 // FAVORITES (tersimpan di localStorage perangkat)
 // =====================================================
@@ -637,13 +645,14 @@ function renderListings(listings, targetId = 'listingsGrid') {
         const fav = isFavorite(listing.id);
         const avgRating = parseFloat(listing.avg_rating) || 0;
         const reviewCount = parseInt(listing.review_count) || 0;
+        const rooms = parseInt(listing.available_rooms ?? 1, 10);
 
         const hasImage = listing.images && listing.images.length > 0;
         const imageHtml = hasImage
             ? `<img src="${escapeHtml(listing.images[0])}" alt="${safeTitle}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'no-image\'><i class=\'fas fa-home\'></i></div>'">`
             : `<div class="no-image"><i class="fas fa-home"></i></div>`;
 
-        // Tautan WhatsApp dengan templat pesan otomatis
+        // Tautan WhatsApp dengan templat pesan otomatis + tanggal masuk
         const waNumber = (listing.owner_phone || '').replace(/^0/, '62').replace(/[^0-9]/g, '');
         const waText = encodeURIComponent(`Halo, saya lihat kos "${listing.title}" di KosEnde, apakah kamar masih tersedia?`);
         const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : '#';
@@ -652,7 +661,7 @@ function renderListings(listings, targetId = 'listingsGrid') {
         <div class="listing-card" onclick="showListingDetail('${escapeHtml(listing.id)}')" style="cursor: pointer;">
             <div class="listing-image">
                 ${imageHtml}
-                <span class="listing-badge">Tersedia</span>
+                <span class="listing-badge">${rooms > 0 ? `Sisa ${rooms} kamar` : 'Tersedia'}</span>
                 <span class="listing-type type-${escapeHtml(kosType)}">${escapeHtml(typeLabel)}</span>
                 <button class="fav-btn ${fav ? 'active' : ''}" title="Simpan ke favorit" onclick="toggleFavorite(event, '${escapeHtml(listing.id)}')">
                     <i class="${fav ? 'fas' : 'far'} fa-heart"></i>
@@ -780,9 +789,18 @@ async function showListingDetail(listingId) {
         : '<span class="text-muted">Tidak ada fasilitas terdaftar</span>';
 
     // WhatsApp link dengan templat pesan otomatis (fast response)
+    // + form "Tanyakan Ketersediaan" dengan tanggal masuk (dirender di modal)
     const waNumber = (safeOwnerPhone || '').replace(/^0/, '62').replace(/[^0-9]/g, '');
     const waText = encodeURIComponent(`Halo, saya lihat kos "${listing.title || ''}" di KosEnde, apakah kamar masih tersedia?`);
     const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : '#';
+
+    // SEO dinamis per kos (penting untuk share WA/FB meski SPA)
+    try {
+        const priceFmt = new Intl.NumberFormat('id-ID').format(listing.price_monthly || 0);
+        document.title = `${listing.title} — Rp ${priceFmt}/bln | KosEnde`;
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', `${listing.title} di ${listing.village || ''}, ${listing.district || 'Ende'}. Rp ${priceFmt}/bulan. ${(listing.description || '').slice(0, 120)}`);
+    } catch (_) {}
 
     // Peta interaktif (OpenStreetMap embed, gratis tanpa API key)
     const hasCoords = listing.latitude && listing.longitude;
@@ -802,6 +820,10 @@ async function showListingDetail(listingId) {
     const avgRating = parseFloat(listing.avg_rating) || 0;
     const reviewCount = parseInt(listing.review_count) || 0;
     const favActive = isFavorite(listing.id);
+    const safeRules = escapeHtml(listing.kos_rules || '');
+    const roomsLeft = parseInt(listing.available_rooms ?? 1, 10);
+    const safeElectricity = escapeHtml(listing.electricity || '-');
+    const safeWater = escapeHtml(listing.water_source || '-');
 
     const detailHtml = `
         <div class="modal active" id="listingDetailModal">
@@ -882,7 +904,20 @@ async function showListingDetail(listingId) {
                         <div class="detail-facilities">
                             ${facilitiesHtml}
                         </div>
+                        <div class="detail-utility">
+                            <span class="utility-chip"><i class="fas fa-bolt"></i> Listrik: ${safeElectricity}</span>
+                            <span class="utility-chip"><i class="fas fa-tint"></i> Air: ${safeWater}</span>
+                            <span class="utility-chip"><i class="fas fa-door-open"></i> Sisa ${roomsLeft} kamar</span>
+                            <span class="utility-chip"><i class="fas fa-ruler-combined"></i> ${safeRoomSize}</span>
+                        </div>
                     </div>
+
+                    ${safeRules ? `
+                        <div class="detail-section">
+                            <h4><i class="fas fa-scroll"></i> Aturan Kos</h4>
+                            <p class="detail-description detail-rules">${safeRules}</p>
+                        </div>
+                    ` : ''}
 
                     <div class="detail-section">
                         <h4><i class="fas fa-user"></i> Pemilik</h4>
@@ -898,6 +933,16 @@ async function showListingDetail(listingId) {
                     </div>
 
                     ${safeOwnerPhone ? `
+                        <div class="detail-section availability-box">
+                            <h4><i class="fab fa-whatsapp"></i> Tanyakan Ketersediaan</h4>
+                            <p class="text-muted" style="font-size:.85rem;margin-bottom:10px;">Isi tanggal rencana masuk — pesan WhatsApp terisi otomatis.</p>
+                            <div class="availability-form">
+                                <input type="date" id="checkinDate" min="${new Date().toISOString().slice(0, 10)}" value="">
+                                <button class="btn btn-success" onclick="askAvailability('${escapeHtml(listing.id)}', '${safeTitle.replace(/'/g, "\\'")}', '${waNumber}')">
+                                    <i class="fab fa-whatsapp"></i> Tanya via WA
+                                </button>
+                            </div>
+                        </div>
                         <div class="detail-cta-row">
                             <a href="${waLink}" target="_blank" class="btn btn-success btn-block">
                                 <i class="fab fa-whatsapp"></i> Hubungi Pemilik via WhatsApp
@@ -956,9 +1001,10 @@ function closeListingDetailModal() {
 
 /**
  * Bagikan kos (Web Share API → fallback salin link)
+ * Pakai URL /kos/:id agar preview OG dinamis saat dishare ke WA/FB.
  */
 function shareListing(id, title) {
-    const url = `${window.location.origin}/?kos=${id}#cari`;
+    const url = `${window.location.origin}/kos/${id}`;
     const text = `Lihat kos "${title}" di KosEnde: ${url}`;
     if (navigator.share) {
         navigator.share({ title: `KosEnde - ${title}`, text, url }).catch(() => {});
@@ -1033,18 +1079,38 @@ async function handleReviewSubmit(e, listingId) {
 }
 
 /**
+ * Tanyakan ketersediaan via WA dengan tanggal masuk otomatis
+ */
+function askAvailability(listingId, title, waNumber) {
+    const dateEl = document.getElementById('checkinDate');
+    const dateVal = dateEl && dateEl.value ? dateEl.value : '';
+    let dateStr = 'secepatnya';
+    if (dateVal) {
+        try {
+            dateStr = new Date(dateVal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (_) { dateStr = dateVal; }
+    }
+    const msg = `Halo, saya lihat kos "${title}" di KosEnde.\nApakah kamar masih tersedia untuk masuk tanggal ${dateStr}?\nBerapa harga & syaratnya? Terima kasih.`;
+    const url = waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}` : '#';
+    if (waNumber) window.open(url, '_blank');
+    else showToast('error', 'Gagal', 'Nomor WhatsApp owner tidak tersedia');
+}
+
+/**
  * Gabungkan semua filter aktif + query pencarian + favorit
  */
 function getFilteredListings() {
     const districtEl = document.getElementById('filterDistrict');
     const typeEl = document.getElementById('filterType');
     const priceEl = document.getElementById('filterPrice');
+    const sortEl = document.getElementById('filterSort');
     const district = districtEl ? districtEl.value : '';
     const kosType = typeEl ? typeEl.value : '';
     const maxPrice = priceEl ? priceEl.value : '';
+    const sort = sortEl ? sortEl.value : 'newest';
     const facilities = [...document.querySelectorAll('.filterFacility:checked')].map(c => c.value);
 
-    let filtered = state.listings;
+    let filtered = [...state.listings];
 
     if (district) {
         filtered = filtered.filter(l => l.district === district);
@@ -1060,7 +1126,8 @@ function getFilteredListings() {
 
     if (facilities.length > 0) {
         filtered = filtered.filter(l => {
-            const owned = (l.facilities || []).map(f => String(f).toLowerCase());
+            const owned = [...(l.facilities || []), l.electricity ? `Listrik ${l.electricity}` : '', l.water_source ? `Air ${l.water_source}` : '']
+                .map(f => String(f).toLowerCase());
             return facilities.every(sel =>
                 owned.some(f => f.includes(sel.toLowerCase()))
             );
@@ -1082,6 +1149,11 @@ function getFilteredListings() {
         );
     }
 
+    if (sort === 'cheapest') filtered.sort((a, b) => parseFloat(a.price_monthly) - parseFloat(b.price_monthly));
+    else if (sort === 'expensive') filtered.sort((a, b) => parseFloat(b.price_monthly) - parseFloat(a.price_monthly));
+    else if (sort === 'rating') filtered.sort((a, b) => (parseFloat(b.avg_rating) || 0) - (parseFloat(a.avg_rating) || 0));
+    else filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
     return filtered;
 }
 
@@ -1102,6 +1174,31 @@ function filterListings() {
     if (filtered.length === 0) {
         grid.style.display = 'none';
         empty.style.display = 'block';
+        // Saran cerdas: tampilkan penyebab + rekomendasi alternatif
+        const hint = document.getElementById('listingsEmptyHint');
+        const sugg = document.getElementById('emptySuggestions');
+        const activeFilters = [];
+        const d = document.getElementById('filterDistrict')?.value;
+        const t = document.getElementById('filterType')?.value;
+        const p = document.getElementById('filterPrice')?.value;
+        const fCount = document.querySelectorAll('.filterFacility:checked').length;
+        if (d) activeFilters.push(`Kecamatan: <b>${escapeHtml(d)}</b>`);
+        if (t) activeFilters.push(`Tipe: <b>${escapeHtml(t)}</b>`);
+        if (p) activeFilters.push(`Harga max: <b>Rp ${formatNumber(p)}</b>`);
+        if (fCount) activeFilters.push(`Fasilitas: <b>${fCount} dipilih</b>`);
+        if (state.searchQuery) activeFilters.push(`Kata kunci: <b>"${escapeHtml(state.searchQuery)}"</b>`);
+        if (state.showFavoritesOnly) activeFilters.push(`Hanya favorit`);
+        if (hint) hint.innerHTML = activeFilters.length
+            ? `Filter aktif — ${activeFilters.join(' • ')}. Coba longgarkan filter:`
+            : `Coba ubah kata kunci atau longgarkan filter:`;
+        if (sugg) {
+            const cheapest = [...state.listings].sort((a, b) => parseFloat(a.price_monthly) - parseFloat(b.price_monthly)).slice(0, 3);
+            sugg.innerHTML = cheapest.length
+                ? `<p class="sugg-title">Saran kos termurah saat ini:</p><div class="sugg-chips">` +
+                  cheapest.map(l => `<button class="sugg-chip" onclick="showListingDetail('${escapeHtml(l.id)}')">${escapeHtml(l.title.slice(0, 28))} — Rp ${formatNumber(l.price_monthly)}</button>`).join('') +
+                  `</div>`
+                : `<p class="text-muted">Belum ada kos terdaftar. Jadilah owner pertama!</p>`;
+        }
     } else {
         grid.style.display = 'grid';
         empty.style.display = 'none';
@@ -1113,9 +1210,11 @@ function resetFilters() {
     const districtEl = document.getElementById('filterDistrict');
     const typeEl = document.getElementById('filterType');
     const priceEl = document.getElementById('filterPrice');
+    const sortEl = document.getElementById('filterSort');
     if (districtEl) districtEl.value = '';
     if (typeEl) typeEl.value = '';
     if (priceEl) priceEl.value = '';
+    if (sortEl) sortEl.value = 'newest';
     document.querySelectorAll('.filterFacility:checked').forEach(c => { c.checked = false; });
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.value = '';
@@ -1123,6 +1222,7 @@ function resetFilters() {
     state.showFavoritesOnly = false;
     document.querySelectorAll('.filter-actions .btn').forEach(b => b.classList.remove('active'));
     filterListings();
+    showToast('info', 'Filter direset', 'Menampilkan semua kos tersedia');
 }
 
 function toggleFavoritesFilter(btn) {
@@ -1569,6 +1669,13 @@ async function editListing(id) {
                     </div>
                     <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                         <div class="form-group">
+                            <label for="editListingRooms">Sisa Kamar</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-door-open"></i>
+                                <input type="number" id="editListingRooms" value="${listing.available_rooms ?? 1}" min="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="editListingType">Tipe Kos *</label>
                             <div class="input-wrapper">
                                 <i class="fas fa-users"></i>
@@ -1577,6 +1684,40 @@ async function editListing(id) {
                                 </select>
                             </div>
                         </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="editListingElectricity">Listrik</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-bolt"></i>
+                                <select id="editListingElectricity">
+                                    <option value="">— Pilih —</option>
+                                    <option value="Token" ${(listing.electricity || '') === 'Token' ? 'selected' : ''}>Token / Pra-bayar</option>
+                                    <option value="Inklusi" ${(listing.electricity || '') === 'Inklusi' ? 'selected' : ''}>Inklusi</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editListingWater">Sumber Air</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-tint"></i>
+                                <select id="editListingWater">
+                                    <option value="">— Pilih —</option>
+                                    <option value="PAM" ${(listing.water_source || '') === 'PAM' ? 'selected' : ''}>Air PAM/PDAM</option>
+                                    <option value="Sumur" ${(listing.water_source || '') === 'Sumur' ? 'selected' : ''}>Air Sumur</option>
+                                    <option value="PAM + Sumur" ${(listing.water_source || '') === 'PAM + Sumur' ? 'selected' : ''}>PAM + Sumur</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editListingRules">Aturan Kos</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-scroll"></i>
+                            <textarea id="editListingRules" rows="2" style="width:100%;padding:12px 16px 12px 44px;border:1.5px solid #e2e8f0;border-radius:12px;resize:vertical;">${escapeHtml(listing.kos_rules || '')}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr;gap:16px;">
                         <div class="form-group">
                             <label for="editListingMapsUrl">Link Google Maps</label>
                             <div class="input-wrapper">
@@ -1657,6 +1798,10 @@ async function handleEditListing(e, id) {
     const mapsUrl = document.getElementById('editListingMapsUrl').value.trim();
     const latInput = document.getElementById('editListingLat').value;
     const lngInput = document.getElementById('editListingLng').value;
+    const rulesInput = document.getElementById('editListingRules')?.value.trim() || '';
+    const roomsInput = document.getElementById('editListingRooms')?.value || '1';
+    const electricityInput = document.getElementById('editListingElectricity')?.value || '';
+    const waterInput = document.getElementById('editListingWater')?.value || '';
 
     if (!title || !locationId || !address || !priceInput) {
         showToast('error', 'Gagal', 'Judul, lokasi, alamat, dan harga wajib diisi');
@@ -1682,6 +1827,10 @@ async function handleEditListing(e, id) {
         price_monthly: price,
         room_size: roomSize,
         kos_type: kosType,
+        kos_rules: rulesInput || null,
+        available_rooms: parseInt(roomsInput, 10) || 1,
+        electricity: electricityInput || null,
+        water_source: waterInput || null,
         latitude: latInput ? parseFloat(latInput) : null,
         longitude: lngInput ? parseFloat(lngInput) : null,
         maps_url: mapsUrl || null,
@@ -1854,8 +2003,18 @@ async function showAddListingModal() {
                             <i class="fas fa-list"></i>
                             <input type="text" id="listingFacilities" placeholder="Contoh: AC, WiFi, Kamar Mandi Dalam, Parkir">
                         </div>
+                        <div class="facility-chips">
+                            ${STANDARD_FACILITIES.map(f => `<button type="button" class="chip" onclick="toggleFacilityChip(this, 'listingFacilities')">${f}</button>`).join('')}
+                        </div>
                     </div>
                     <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="listingRooms">Sisa Kamar Tersedia</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-door-open"></i>
+                                <input type="number" id="listingRooms" placeholder="1" min="0" value="1">
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="listingType">Tipe Kos *</label>
                             <div class="input-wrapper">
@@ -1868,6 +2027,40 @@ async function showAddListingModal() {
                                 </select>
                             </div>
                         </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label for="listingElectricity">Listrik</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-bolt"></i>
+                                <select id="listingElectricity">
+                                    <option value="">— Pilih —</option>
+                                    <option value="Token">Token / Pra-bayar</option>
+                                    <option value="Inklusi">Inklusi (termasuk harga)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="listingWater">Sumber Air</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-tint"></i>
+                                <select id="listingWater">
+                                    <option value="">— Pilih —</option>
+                                    <option value="PAM">Air PAM/PDAM</option>
+                                    <option value="Sumur">Air Sumur</option>
+                                    <option value="PAM + Sumur">PAM + Sumur</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="listingRules">Aturan Kos <small>(jam malam, hewan, tamu...)</small></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-scroll"></i>
+                            <textarea id="listingRules" placeholder="Contoh: Jam malam 22.00. Tidak boleh bawa hewan. Tamu sampai ruang tamu." rows="2" style="width:100%;padding:12px 16px 12px 44px;border:1px solid #e5e7eb;border-radius:12px;resize:vertical;"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr;gap:16px;">
                         <div class="form-group">
                             <label for="listingMapsUrl">Link Google Maps <small>(opsional)</small></label>
                             <div class="input-wrapper">
@@ -1947,6 +2140,24 @@ function closeAddListingModal() {
     document.body.style.overflow = '';
 }
 
+/**
+ * Chip fasilitas cepat — klik untuk tambah/hapus dari input koma
+ */
+function toggleFacilityChip(btn, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const val = btn.textContent.trim();
+    let items = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    if (items.includes(val)) {
+        items = items.filter(s => s !== val);
+        btn.classList.remove('selected');
+    } else {
+        items.push(val);
+        btn.classList.add('selected');
+    }
+    input.value = items.join(', ');
+}
+
 async function handleAddListing(e) {
     e.preventDefault();
 
@@ -1963,6 +2174,10 @@ async function handleAddListing(e) {
     const mapsUrl = document.getElementById('listingMapsUrl').value.trim();
     const latInput = document.getElementById('listingLat').value;
     const lngInput = document.getElementById('listingLng').value;
+    const rulesInput = document.getElementById('listingRules')?.value.trim() || '';
+    const roomsInput = document.getElementById('listingRooms')?.value || '1';
+    const electricityInput = document.getElementById('listingElectricity')?.value || '';
+    const waterInput = document.getElementById('listingWater')?.value || '';
 
     // Validation
     if (!title) {
@@ -2021,6 +2236,10 @@ async function handleAddListing(e) {
         deposit: deposit,
         room_size: roomSize,
         kos_type: kosType,
+        kos_rules: rulesInput || null,
+        available_rooms: parseInt(roomsInput, 10) || 1,
+        electricity: electricityInput || null,
+        water_source: waterInput || null,
         latitude: latInput ? parseFloat(latInput) : null,
         longitude: lngInput ? parseFloat(lngInput) : null,
         maps_url: mapsUrl || null,
@@ -2356,7 +2575,22 @@ async function loadSubscription() {
                                 <h2 class="panel-title">Perpanjang Langganan</h2>
                             </div>
                             <div class="payment-info" style="background: var(--gray-50); padding: 24px; border-radius: var(--radius-lg); margin-bottom: 24px;">
-                                <h3 style="margin-bottom: 16px;">Informasi Pembayaran</h3>
+                                <h3 style="margin-bottom: 16px;">Opsi 1 — Bayar Otomatis (QRIS / VA / E-Wallet)</h3>
+                                <p style="margin-bottom: 12px; color: var(--gray-600);">Aktif instan tanpa tunggu admin. Didukung setelah Midtrans dikonfigurasi; bila belum, Anda diarahkan ke opsi manual.</p>
+                                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+                                    <select id="gatewayDuration" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                                        <option value="1">1 bulan — Rp 50.000</option>
+                                        <option value="3">3 bulan — Rp 150.000</option>
+                                        <option value="6">6 bulan — Rp 300.000</option>
+                                        <option value="12">12 bulan — Rp 600.000</option>
+                                    </select>
+                                    <button class="btn btn-primary" onclick="handleGatewayPay()">
+                                        <i class="fas fa-bolt"></i> Bayar Otomatis
+                                    </button>
+                                </div>
+                                <p class="text-muted" style="font-size:.8rem;">QRIS, GoPay, OVO, Dana, transfer VA BCA/BRI/BNI/Mandiri via Midtrans.</p>
+                                <hr style="margin:18px 0;border:none;border-top:1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 16px;">Opsi 2 — Transfer Manual</h3>
                                 <p style="margin-bottom: 12px; color: var(--gray-600);">Untuk memperpanjang langganan, silakan transfer ke:</p>
                                 <div style="background: white; padding: 16px; border-radius: var(--radius-md); margin-bottom: 16px;">
                                     <p><strong>Bank BNI</strong></p>
@@ -2465,6 +2699,35 @@ async function handlePaymentSubmit(e) {
         loadSubscription();
     } else {
         showToast('error', 'Gagal', result.message);
+    }
+}
+
+/**
+ * Bayar otomatis via payment gateway (Midtrans). Fallback ke manual bila belum dikonfigurasi.
+ */
+async function handleGatewayPay() {
+    const durEl = document.getElementById('gatewayDuration');
+    const duration = durEl ? parseInt(durEl.value, 10) : 1;
+    showToast('info', 'Memproses...', 'Membuat transaksi pembayaran otomatis');
+    const result = await api('/subscriptions/gateway-charge', {
+        method: 'POST',
+        body: { duration_months: duration },
+    });
+    if (!result.success) {
+        showToast('error', 'Gagal', result.message || 'Gagal membuat transaksi');
+        return;
+    }
+    if (result.gateway === 'manual') {
+        showToast('info', 'Gateway belum aktif', 'Silakan gunakan transfer manual BNI di bawah.');
+        document.getElementById('paymentForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+    const snapUrl = result.data?.redirect_url;
+    if (snapUrl) {
+        window.open(snapUrl, '_blank');
+        showToast('success', 'Silakan bayar', 'Setelah bayar, langganan aktif otomatis. Muat ulang halaman setelah selesai.');
+    } else {
+        showToast('info', 'Transaksi dibuat', `Order: ${result.data?.orderId || '-'}`);
     }
 }
 
@@ -2887,6 +3150,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Deep-link: /?kos=<id>#cari atau #cari — buka halaman cari + detail otomatis
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const kosId = params.get('kos');
+        if (window.location.hash === '#cari' || kosId) {
+            goToListings();
+            if (kosId) {
+                const tryOpen = (n) => {
+                    if (n <= 0) return;
+                    if (state.listings.length > 0) showListingDetail(kosId);
+                    else setTimeout(() => tryOpen(n - 1), 500);
+                };
+                tryOpen(10);
+            }
+        }
+    } catch (_) {}
+
     // Make navigation functions globally available
     window.goToHome = goToHome;
     window.goToListings = goToListings;
@@ -2924,6 +3204,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showListingDetail = showListingDetail;
     window.closeListingDetailModal = closeListingDetailModal;
     window.shareListing = shareListing;
+    window.askAvailability = askAvailability;
+    window.toggleFacilityChip = toggleFacilityChip;
+    window.handleGatewayPay = handleGatewayPay;
     window.setReviewRating = setReviewRating;
     window.handleReviewSubmit = handleReviewSubmit;
     window.handleProofUpload = handleProofUpload;

@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=7">
+    <link rel="stylesheet" href="css/style.css?v=8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -179,13 +179,30 @@
                                     <option value="5000000">Rp 5.000.000</option>
                                 </select>
                             </div>
+                            <div class="filter-group">
+                                <label>Urutkan:</label>
+                                <select id="filterSort" onchange="filterListings()">
+                                    <option value="newest">Terbaru</option>
+                                    <option value="cheapest">Termurah</option>
+                                    <option value="expensive">Termahal</option>
+                                    <option value="rating">Rating Tertinggi</option>
+                                </select>
+                            </div>
                             <div class="filter-group filter-facilities">
                                 <label>Fasilitas:</label>
                                 <div class="facility-checkboxes">
-                                    <label><input type="checkbox" class="filterFacility" value="AC" onchange="filterListings()"> AC</label>
-                                    <label><input type="checkbox" class="filterFacility" value="WiFi" onchange="filterListings()"> WiFi</label>
-                                    <label><input type="checkbox" class="filterFacility" value="Kamar Mandi Dalam" onchange="filterListings()"> KM Dalam</label>
-                                    <label><input type="checkbox" class="filterFacility" value="Parkir" onchange="filterListings()"> Parkir</label>
+                                    <label title="Internet nirkabel"><input type="checkbox" class="filterFacility" value="WiFi" onchange="filterListings()"> WiFi</label>
+                                    <label title="Pendingin ruangan"><input type="checkbox" class="filterFacility" value="AC" onchange="filterListings()"> AC</label>
+                                    <label title="Kamar mandi di dalam kamar"><input type="checkbox" class="filterFacility" value="Kamar Mandi Dalam" onchange="filterListings()"> KM Dalam</label>
+                                    <label title="Kamar mandi luar / bersama"><input type="checkbox" class="filterFacility" value="Kamar Mandi Luar" onchange="filterListings()"> KM Luar</label>
+                                    <label title="Area parkir motor/mobil"><input type="checkbox" class="filterFacility" value="Parkir" onchange="filterListings()"> Parkir</label>
+                                    <label title="Dapur bersama atau pribadi"><input type="checkbox" class="filterFacility" value="Dapur" onchange="filterListings()"> Dapur</label>
+                                    <label title="Air PDAM/PAM"><input type="checkbox" class="filterFacility" value="Air PAM" onchange="filterListings()"> Air PAM</label>
+                                    <label title="Air sumur"><input type="checkbox" class="filterFacility" value="Air Sumur" onchange="filterListings()"> Air Sumur</label>
+                                    <label title="Listrik token pra-bayar"><input type="checkbox" class="filterFacility" value="Listrik Token" onchange="filterListings()"> Listrik Token</label>
+                                    <label title="Listrik sudah termasuk harga"><input type="checkbox" class="filterFacility" value="Listrik Inklusi" onchange="filterListings()"> Listrik Inklusi</label>
+                                    <label title="Kamera pengawas"><input type="checkbox" class="filterFacility" value="CCTV" onchange="filterListings()"> CCTV</label>
+                                    <label title="Jasa cuci pakaian"><input type="checkbox" class="filterFacility" value="Laundry" onchange="filterListings()"> Laundry</label>
                                 </div>
                             </div>
                             <div class="filter-group filter-actions">
@@ -204,7 +221,16 @@
                         <div class="listings-empty" id="listingsEmpty" style="display: none;">
                             <i class="fas fa-search"></i>
                             <h3>Tidak ada kos ditemukan</h3>
-                            <p>Coba ubah filter pencarian Anda</p>
+                            <p id="listingsEmptyHint">Coba ubah filter pencarian Anda</p>
+                            <div class="empty-suggestions" id="emptySuggestions"></div>
+                            <div class="empty-actions">
+                                <button class="btn btn-primary" onclick="resetFilters()">
+                                    <i class="fas fa-undo"></i> Reset Semua Filter
+                                </button>
+                                <button class="btn btn-ghost" onclick="goToHome()">
+                                    <i class="fas fa-home"></i> Kembali ke Beranda
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -672,6 +698,6 @@
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/app.js?v=7"></script>
+    <script src="js/app.js?v=8"></script>
 </body>
 </html>

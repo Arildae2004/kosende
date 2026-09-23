@@ -3221,3 +3221,70 @@ input, select, textarea {
     border-radius: 10px;
     border: 1px solid #e2e8f0;
 }
+
+/* =====================================================
+   FITUR BARU: chips fasilitas, utilitas, availability, empty state
+   + polish responsif mobile
+   ===================================================== */
+.facility-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.facility-chips .chip {
+    font-size: 0.78rem; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer;
+    transition: all 0.15s ease;
+}
+.facility-chips .chip:hover { border-color: #2563eb; color: #2563eb; }
+.facility-chips .chip.selected { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+.detail-utility { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.utility-chip {
+    font-size: 0.78rem; background: #f1f5f9; border: 1px solid #e2e8f0;
+    padding: 6px 12px; border-radius: 999px; color: #334155;
+}
+.utility-chip i { color: #2563eb; margin-right: 4px; }
+
+.detail-rules {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;
+    padding: 12px 16px; white-space: pre-line;
+}
+
+.availability-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px; }
+.availability-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.availability-form input[type="date"] {
+    flex: 1; min-width: 160px; padding: 12px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem;
+}
+
+.listings-empty { text-align: center; padding: 48px 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 16px; }
+.listings-empty i.fa-search { font-size: 2.5rem; color: #94a3b8; margin-bottom: 12px; }
+.empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.empty-suggestions { margin-top: 16px; }
+.sugg-title { font-size: 0.85rem; color: #64748b; margin-bottom: 8px; }
+.sugg-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.sugg-chip {
+    font-size: 0.8rem; padding: 8px 14px; border-radius: 999px;
+    background: #fff; border: 1px solid #e2e8f0; cursor: pointer;
+}
+.sugg-chip:hover { border-color: #2563eb; color: #2563eb; }
+
+/* Filter fasilitas: scroll horizontal di mobile agar tidak terlalu panjang */
+.facility-checkboxes { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.facility-checkboxes label {
+    font-size: 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 999px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
+}
+.facility-checkboxes label:has(input:checked) { background: #eff6ff; border-color: #2563eb; color: #1d4ed8; }
+
+/* Mobile polish tambahan */
+@media (max-width: 768px) {
+    .listings-filter { max-height: none; }
+    .facility-checkboxes { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+    .filter-group { min-width: 0; }
+    .detail-cta-row .btn-block { position: sticky; bottom: 10px; z-index: 5; box-shadow: 0 8px 24px rgba(37,99,235,.25); }
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .data-table { min-width: 640px; }
+    .sidebar-menu { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; }
+    .sidebar-link { white-space: nowrap; flex-shrink: 0; }
+    .availability-form input[type="date"], .availability-form .btn { width: 100%; }
+    .listing-footer { flex-direction: column; gap: 10px; align-items: stretch; }
+    .listing-contact .btn { width: 100%; justify-content: center; }
+}

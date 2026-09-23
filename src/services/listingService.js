@@ -14,6 +14,10 @@ class ListingService {
             deposit,
             room_size,
             kos_type,
+            kos_rules,
+            available_rooms,
+            electricity,
+            water_source,
             latitude,
             longitude,
             maps_url,
@@ -30,8 +34,9 @@ class ListingService {
                 `INSERT INTO listings (
                     owner_id, location_id, title, description, address,
                     price_monthly, deposit, room_size, kos_type,
+                    kos_rules, available_rooms, electricity, water_source,
                     latitude, longitude, maps_url, facilities, images, status
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'pending')
                 RETURNING *`,
                 [
                     ownerId,
@@ -43,6 +48,10 @@ class ListingService {
                     deposit || 0,
                     room_size || null,
                     ['putra', 'putri', 'campur', 'pasutri'].includes(kos_type) ? kos_type : 'campur',
+                    kos_rules || null,
+                    Number.isInteger(available_rooms) ? available_rooms : (parseInt(available_rooms, 10) || 1),
+                    electricity || null,
+                    water_source || null,
                     latitude || null,
                     longitude || null,
                     maps_url || null,
@@ -289,6 +298,7 @@ class ListingService {
         const allowedFields = [
             'location_id', 'title', 'description', 'address',
             'price_monthly', 'deposit', 'room_size', 'kos_type',
+            'kos_rules', 'available_rooms', 'electricity', 'water_source',
             'latitude', 'longitude', 'maps_url', 'facilities', 'images',
         ];
 
@@ -397,7 +407,9 @@ class ListingService {
     async getActiveListings(filters = {}) {
         let query = `
             SELECT l.id, l.title, l.description, l.address, l.price_monthly,
-                   l.room_size, l.kos_type, l.latitude, l.longitude, l.maps_url,
+                   l.room_size, l.kos_type, l.kos_rules, l.available_rooms,
+                   l.electricity, l.water_source,
+                   l.latitude, l.longitude, l.maps_url,
                    l.facilities, l.images, l.created_at,
                    u.name AS owner_name, u.phone AS owner_phone,
                    loc.village, loc.district, loc.city, loc.province,

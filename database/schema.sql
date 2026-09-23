@@ -54,6 +54,10 @@ CREATE TABLE payments (
     subscription_id UUID REFERENCES subscriptions(id),
     amount DECIMAL(12, 2) NOT NULL,
     payment_method VARCHAR(50),
+    gateway VARCHAR(20) DEFAULT 'manual',
+    gateway_order_id VARCHAR(100),
+    gateway_transaction_id VARCHAR(100),
+    gateway_payload JSONB DEFAULT '{}'::jsonb,
     proof_url VARCHAR(500),
     status payment_status NOT NULL DEFAULT 'pending',
     verified_by UUID REFERENCES users(id),
@@ -111,6 +115,10 @@ CREATE TABLE listings (
     room_size VARCHAR(50),                  -- contoh: "3x4 meter"
     kos_type VARCHAR(20) NOT NULL DEFAULT 'campur'
         CHECK (kos_type IN ('putra', 'putri', 'campur', 'pasutri')),
+    kos_rules TEXT,                       -- aturan kos: jam malam, hewan, pasutri, dll
+    available_rooms INTEGER DEFAULT 1,    -- sisa kamar tersedia
+    electricity VARCHAR(50),              -- "Token" / "Inklusi" / "Subsidi"
+    water_source VARCHAR(50),             -- "PAM" / "Sumur" / "PAM + Sumur"
     latitude DECIMAL(10, 8),                -- pin point untuk peta
     longitude DECIMAL(11, 8),
     maps_url VARCHAR(500),                  -- link Google Maps owner (opsional)

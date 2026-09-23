@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const subscriptionService = require('../services/subscriptionService');
+const paymentGateway = require('../services/paymentGateway');
 
 class SubscriptionController {
     /**
@@ -242,6 +243,108 @@ class SubscriptionController {
                 success: false,
                 message: 'Internal server error',
             });
+        }
+    }
+
+    /**
+     * Buat transaksi gateway otomatis (Midtrans Snap bila dikonfigurasi)
+     * POST /api/subscriptions/gateway-charge
+     */
+    async createGatewayCharge(req, res) {
+        try {
+            const userId = req.user.id;
+            const subscription = await subscriptionService.getSubscriptionByUserId(userId);
+            if (!subscription) {
+                return res.status(404).json({ success: false, message: 'No subscription found' });
+            }
+            const duration = Math.max(1, parseInt(req.body.duration_months || '1', 10) || 1);
+            const amount = paymentGateway.SUBSCRIPTION_PRICE * duration;
+            const orderId = `KOSENDE-${userId.slice(0, 8)}-${Date.now()}`;
+
+            const charge = await paymentGateway.createSubscriptionCharge({
+                orderId,
+                amount,
+                customer: { name: req.user.name, email: req.user.email, phone: req.user.phone },
+            });
+
+            if (!charge.enabled) {
+                return res.json({
+                    success: true,
+                    gateway: 'manual',
+                    message: 'Gateway belum aktif. Silakan transfer manual BNI lalu konfirmasi via WhatsApp.',
+                    data: { orderId, amount, gatewayEnabled: false },
+                });
+            }
+
+            await db.query(
+                `INSERT INTO payments (user_id, subscription_id, amount, payment_method, status, notes, gateway, gateway_order_id, gateway_payload)
+                 VALUES ($1, $2, $3, 'qris_gateway', 'pending', $4, 'midtrans', $5, $6)`,
+                [userId, subscription.id, amount, `Langganan ${duration} bulan via gateway`, orderId, JSON.stringify({ duration_months: duration })]
+            );
+
+            return res.json({ success: true, gateway: 'midtrans', data: charge });
+        } catch (error) {
+            console.error('Gateway charge error:', error);
+            return res.status(500).json({ success: false, message: error.message || 'Gagal membuat transaksi gateway' });
+        }
+    }
+
+    /**
+     * Webhook Midtrans (notification) — aktivasi otomatis tanpa verifikasi admin
+     * POST /api/subscriptions/gateway-webhook
+     */
+    async gatewayWebhook(req, res) {
+        try {
+            const { order_id, transaction_status, fraud_status, transaction_id } = req.body || {};
+            if (!order_id) return res.status(400).json({ success: false, message: 'order_id wajib' });
+
+            const payRes = await db.query(`SELECT * FROM payments WHERE gateway_order_id = $1 LIMIT 1`, [order_id]);
+            if (payRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Payment not found' });
+            const payment = payRes.rows[0];
+
+            const paid = ['capture', 'settlement'].includes(transaction_status) && fraud_status !== 'deny';
+            if (!paid) {
+                if (['cancel', 'deny', 'expire'].includes(transaction_status)) {
+                    await db.query(`UPDATE payments SET status='rejected', gateway_transaction_id=$2, gateway_payload=gateway_payload || $3 WHERE id=$1`,
+                        [payment.id, transaction_id || null, JSON.stringify(req.body)]);
+                }
+                return res.json({ success: true, message: `Status ${transaction_status} dicatat` });
+            }
+
+            const client = await db.pool.connect();
+            try {
+                await client.query('BEGIN');
+                const payload = payment.gateway_payload || {};
+                const duration = parseInt(payload.duration_months || '1', 10) || 1;
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + duration);
+                await client.query(
+                    `UPDATE payments SET status='verified', verified_at=NOW(), gateway_transaction_id=$2, gateway_payload=$3, updated_at=NOW() WHERE id=$1`,
+                    [payment.id, transaction_id || null, JSON.stringify(req.body)]
+                );
+                await client.query(
+                    `UPDATE subscriptions SET status='active', subscription_start_date=NOW(), subscription_end_date=$2, updated_at=NOW() WHERE id=$1`,
+                    [payment.subscription_id, endDate]
+                );
+                await client.query(
+                    `UPDATE listings SET is_active=true, status='approved', updated_at=NOW() WHERE owner_id=$1 AND status IN ('approved','inactive')`,
+                    [payment.user_id]
+                );
+                await client.query(
+                    `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES ($1,'payment_verified_auto','payment',$2,$3)`,
+                    [payment.user_id, payment.id, JSON.stringify({ gateway: 'midtrans', order_id })]
+                );
+                await client.query('COMMIT');
+            } catch (e) {
+                await client.query('ROLLBACK');
+                throw e;
+            } finally {
+                client.release();
+            }
+            return res.json({ success: true, message: 'Langganan aktif otomatis via gateway' });
+        } catch (error) {
+            console.error('Gateway webhook error:', error);
+            return res.status(500).json({ success: false, message: 'Webhook error' });
         }
     }
 

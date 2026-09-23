@@ -25,6 +25,17 @@ router.get(
     subscriptionController.getPaymentHistory
 );
 
+// Payment gateway otomatis (Midtrans bila dikonfigurasi, fallback manual)
+router.post(
+    '/gateway-charge',
+    authenticate,
+    authorize('owner'),
+    subscriptionController.createGatewayCharge
+);
+
+// Webhook publik dari Midtrans (tanpa auth JWT, validasi signature di gateway)
+router.post('/gateway-webhook', subscriptionController.gatewayWebhook);
+
 // Admin routes
 router.get(
     '/admin/pending-payments',

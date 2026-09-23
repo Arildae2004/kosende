@@ -34,6 +34,7 @@ async function migrate() {
 
         await runFile('schema.sql');
         await runFile('migration-002.sql');
+        await runFile('migration-003.sql');
 
         console.log('✅ Migration completed successfully!');
         console.log('📊 Tables: users, subscriptions, payments, locations, listings, reviews, activity_logs');
